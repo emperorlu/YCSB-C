@@ -46,7 +46,6 @@ namespace ycsbc {
     WiredTiger::WiredTiger(const char *home, utils::Properties &props) :noResult(0){
         WT_SESSION *session;
         //set option
-        
         const char *CONN_CONFIG = SetConnOptions(props).c_str();
             // "create,cache_size=100MB,direct_io=[data],log=(archive=false,enabled=true)";
         /* Open a connection to the database, creating it if necessary. */
@@ -55,12 +54,18 @@ namespace ycsbc {
         /* Open a session handle for the database. */
         error_check(conn_->open_session(conn_, NULL, NULL, &session));
 
-        const char *SESS_CONFIG = SetSessionOptions(props).c_str()
-        error_check(session->create(session, uri_.c_str(), SESS_CONFIG));
+        const char *CONFIG = SetOptions(props).c_str()
+        error_check(session->create(session, uri_.c_str(), CONFIG));
 
         // error_check(session->open_cursor(session, uri, NULL, NULL, &cursor));
         error_check(session->close(session, NULL));
-        
+
+        session_nums_ = stoi(props.GetProperty("threadcount", "1"));
+        WT_SESSION **session_ = new (WT_SESSION *)[session_nums_];
+        for (int i = 0; i < session_nums_; i++){
+            error_check(conn_->open_session(conn_, NULL, NULL, &(session[i]));
+            assert(session[i] != NULL);
+        }
     }
 
     std::string WiredTiger::SetConnOptions(utils::Properties &props) {
@@ -88,37 +93,36 @@ namespace ycsbc {
         return conn_config;
     }
 
-    std::string WiredTiger::SetSessionOptions(utils::Properties &props) {
+    std::string WiredTiger::SetOptions(utils::Properties &props) {
         //
         uri_ = "table:ycsb_wiredtiger" ; //"lsm:ycsb_wiredtiger"
-        std::stringstream sess_config ;
-        sess_config.str("");
+        std::stringstream config ;
+        config.str("");
 
-        sess_config << "key_format=S,value_format=S";
-        sess_config << ",prefix_compression=false";
-        sess_config << ",checksum=off";
+        config << "key_format=S,value_format=S";
+        config << ",prefix_compression=false";
+        config << ",checksum=off";
         
-        sess_config << ",internal_page_max=16kb";
-        sess_config << ",leaf_page_max=16kb";
-        sess_config << ",memory_page_max=100MB";
+        config << ",internal_page_max=16kb";
+        config << ",leaf_page_max=16kb";
+        config << ",memory_page_max=100MB";
 
-        // sess_config << ",lsm=(";
-        // sess_config << ",chunk_size=20MB";
-        // sess_config << ",bloom_bit_count=10"
-        // sess_config << ")";
+        // config << ",lsm=(";
+        // config << ",chunk_size=20MB";
+        // config << ",bloom_bit_count=10"
+        // config << ")";
         
-        return sess_config.str();
+        return config.str();
     }
 
     int WiredTiger::Read(const std::string &table, const std::string &key, const std::vector<std::string> *fields,
-                      std::vector<KVPair> &result) {
+                      std::vector<KVPair> &result) { }
+    int WiredTiger::Read(const std::string &table, const std::string &key, const std::vector<std::string> *fields,
+                      std::vector<KVPair> &result, int nums) {
         WT_CURSOR *cursor;
-        WT_SESSION *session;
-        error_check(conn_->open_session(conn_, NULL, NULL, &session));
-        error_check(session->open_cursor(session, uri_.c_str(), NULL, NULL, &cursor));
+        error_check(session_[nums]->open_cursor(session_[nums], uri_.c_str(), NULL, NULL, &cursor));
         cursor->set_key(cursor, key.c_str());
         int ret = cursor->search(cursor);
-        error_check(session->close(session, NULL));
         if(!ret){
             return DB::kOK;
         }else if(ret == WT_NOTFOUND){
@@ -130,13 +134,12 @@ namespace ycsbc {
         }
     }
 
-
     int WiredTiger::Scan(const std::string &table, const std::string &key, const std::string &max_key, int len, const std::vector<std::string> *fields,
-                      std::vector<std::vector<KVPair>> &result) {
+                      std::vector<std::vector<KVPair>> &result) { }
+    int WiredTiger::Scan(const std::string &table, const std::string &key, const std::string &max_key, int len, const std::vector<std::string> *fields,
+                      std::vector<std::vector<KVPair>> &result, int nums) {
         WT_CURSOR *cursor;
-        WT_SESSION *session;
-        error_check(conn_->open_session(conn_, NULL, NULL, &session));
-        error_check(session->open_cursor(session, uri_.c_str(), NULL, NULL, &cursor));
+        error_check(session_[nums]->open_cursor(session_[nums], uri_.c_str(), NULL, NULL, &cursor));
         cursor->set_key(cursor, key.c_str());
         int i = 0, ret;
         while (i < len && (ret = cursor->next(cursor)) == 0) {
@@ -146,23 +149,21 @@ namespace ycsbc {
             string key2 = key1;
             if(key2 >= key) break;
         }
-        error_check(session->close(session, NULL));
         return DB::kOK;
     }
 
     int WiredTiger::Insert(const std::string &table, const std::string &key,
-                        std::vector<KVPair> &values){
+                        std::vector<KVPair> &values) { }
+    int WiredTiger::Insert(const std::string &table, const std::string &key,
+                        std::vector<KVPair> &values, int nums){
         WT_CURSOR *cursor;
-        WT_SESSION *session;
-        error_check(conn_->open_session(conn_, NULL, NULL, &session));
-        error_check(session->open_cursor(session, uri_.c_str(), NULL, NULL, &cursor));
+        error_check(session_[nums]->open_cursor(session_[nums], uri_.c_str(), NULL, NULL, &cursor));
 
         string value = values.at(0).second;
 
         cursor->set_key(cursor, key.c_str());
         cursor->set_value(cursor, value.c_str());
         error_check(cursor->insert(cursor));
-        error_check(session->close(session, NULL));
         
         return DB::kOK;
     }
@@ -170,19 +171,20 @@ namespace ycsbc {
     int WiredTiger::Update(const std::string &table, const std::string &key, std::vector<KVPair> &values) {
         return Insert(table,key,values);
     }
+    int WiredTiger::Update(const std::string &table, const std::string &key, std::vector<KVPair> &values, int nums) {
+        return Insert(table,key,values,nums);
+    }
 
+    int WiredTiger::Delete(const std::string &table, const std::string &key) { }
     int WiredTiger::Delete(const std::string &table, const std::string &key) {
         WT_CURSOR *cursor;
-        WT_SESSION *session;
-        error_check(conn_->open_session(conn_, NULL, NULL, &session));
-        error_check(session->open_cursor(session, uri_.c_str(), NULL, NULL, &cursor));
+        error_check(session_[nums]->open_cursor(session_[nums], uri_.c_str(), NULL, NULL, &cursor));
         cursor->set_key(cursor, key.c_str());
         error_check(cursor->remove(cursor));
-        error_check(session->close(session, NULL));
         return DB::kOK;
     }
 
-    void print_cursor(WT_CURSOR *cursor)
+    inline void print_cursor(WT_CURSOR *cursor)
     {
         const char *desc, *pvalue;
         int64_t value;
@@ -212,6 +214,10 @@ namespace ycsbc {
 
 
     WiredTiger::~WiredTiger() {
+        for(int i = 0; i < session_nums_; i++) {
+            error_check(session_[i]->close(session_[i], NULL));
+        }
+        delete session_;
         error_check(conn_->close(conn_, NULL));
         delete conn_;
     }

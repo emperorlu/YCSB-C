@@ -36,19 +36,29 @@ namespace ycsbc {
         int Read(const std::string &table, const std::string &key,
                  const std::vector<std::string> *fields,
                  std::vector<KVPair> &result);
+        int Read(const std::string &table, const std::string &key,
+                 const std::vector<std::string> *fields,
+                 std::vector<KVPair> &result, int nums);
 
         int Scan(const std::string &table, const std::string &key, const std::string &max_key,
                  int len, const std::vector<std::string> *fields,
                  std::vector<std::vector<KVPair>> &result);
+        int Scan(const std::string &table, const std::string &key, const std::string &max_key,
+                 int len, const std::vector<std::string> *fields,
+                 std::vector<std::vector<KVPair>> &result, int nums);
 
         int Insert(const std::string &table, const std::string &key,
                    std::vector<KVPair> &values);
+        int Insert(const std::string &table, const std::string &key,
+                   std::vector<KVPair> &values, int nums);
 
         int Update(const std::string &table, const std::string &key,
                    std::vector<KVPair> &values);
-
+        int Update(const std::string &table, const std::string &key,
+                   std::vector<KVPair> &values, int nums);
 
         int Delete(const std::string &table, const std::string &key);
+        int Delete(const std::string &table, const std::string &key, int nums);
 
         void PrintStats();
 
@@ -56,11 +66,13 @@ namespace ycsbc {
 
     private:
         WT_CONNECTION *conn_;
+        WT_SESSION **session_;
         std::string uri_;
         unsigned noResult;
+        int session_nums_;
 
         std::string SetConnOptions(utils::Properties &props);
-        std::string SetSessionOptions(utils::Properties &props);
+        std::string SetOptions(utils::Properties &props);
         void SerializeValues(std::vector<KVPair> &kvs, std::string &value);
         void DeSerializeValues(std::string &value, std::vector<KVPair> &kvs);
 
