@@ -195,8 +195,11 @@ namespace ycsbc {
         // statistics must be set
         WT_CURSOR *cursor;
         WT_SESSION *session;
+        std::stringstream suri;
+        suri.str("");
+        suri << "statistics:" << uri_;
         conn_->open_session(conn_, NULL, NULL, &session);
-        int ret = session->open_cursor(session, "statistics:table:test", NULL, NULL, &cursor);
+        int ret = session->open_cursor(session, suri.str().c_str(), NULL, NULL, &cursor);
         if (ret != 0) {
             fprintf(stderr, "open_cursor error: %s\n", wiredtiger_strerror(ret));
             exit(1);
