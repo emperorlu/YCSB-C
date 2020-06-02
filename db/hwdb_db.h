@@ -32,20 +32,20 @@ namespace ycsbc {
         HWDB(const char *dbfilename, utils::Properties &props);
         int Read(const std::string &table, const std::string &key,
                  const std::vector<std::string> *fields,
-                 std::vector<KVPair> &result, int nums);
+                 std::vector<KVPair> &result);
 
         int Scan(const std::string &table, const std::string &key, const std::string &max_key,
                  int len, const std::vector<std::string> *fields,
-                 std::vector<std::vector<KVPair>> &result, int nums);
+                 std::vector<std::vector<KVPair>> &result);
 
         int Insert(const std::string &table, const std::string &key,
-                   std::vector<KVPair> &values, int nums);
+                   std::vector<KVPair> &values);
 
         int Update(const std::string &table, const std::string &key,
-                   std::vector<KVPair> &values, int nums);
+                   std::vector<KVPair> &values);
 
 
-        int Delete(const std::string &table, const std::string &key, int nums);
+        int Delete(const std::string &table, const std::string &key);
 
         void PrintStats();
 

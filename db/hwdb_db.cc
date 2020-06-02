@@ -62,6 +62,8 @@ namespace ycsbc {
             cerr<<"Can't open hwdb "<<dbfilename<<" "<<s<<endl;
             exit(0);
         }
+
+        PrintConfig(&config_);
     }
 
     void HWDB::SetOptions(const char *dbfilename, utils::Properties &props) {
@@ -76,22 +78,33 @@ namespace ycsbc {
         uint32_t key_len = stoi(props.GetProperty(CoreWorkload::KEY_LENGTH));
         uint32_t value_len = stoi(props.GetProperty(CoreWorkload::FIELD_LENGTH_PROPERTY));
 
-        uint64_t inner_cache = nums * (key_len + value_len) * 2 / 10 / 512;
-        uint64_t leaf_cache = nums * (key_len + value_len) * 1 / 10 / 4096;
-        if(inner_cache < 4096) inner_cache = 4096;
-        if(leaf_cache < 1024) leaf_cache = 1024;
+        uint32_t inner_size = 512;
+        uint32_t leaf_size = 4096;
+
+        config_.kInnerBlockSize = inner_size;
+        config_.kInnerCacheItemSize = inner_size;
+        config_.kLeafBlockSize = leaf_size;
+        config_.kLeafCacheItemSize = leaf_size;
+
+        uint64_t inner_cache = nums * (key_len + value_len) * 5 / 100 / inner_size;
+        uint64_t leaf_cache = nums * (key_len + value_len) * 5 / 100 / leaf_size;
+        if(inner_cache < 4096) inner_cache = 4 * 4096;
+        if(leaf_cache < 1024) leaf_cache = 16 * 1024;
 
         config_.kInnerCacheBucketSize = inner_cache;
-        config_.kInnerCacheBits = 12; //4096
+        config_.kInnerCacheBits = 8; //
 
         config_.kLeafCacheBucketSize = leaf_cache;
-        config_.kLeafCacheBits = 10;  //1024
+        config_.kLeafCacheBits = 8;  //
+
+        config_.kPlogClientType = 3;
+        config_.kLogDirectWrite = 0;
     
     }
 
 
     int HWDB::Read(const std::string &table, const std::string &key, const std::vector<std::string> *fields,
-                      std::vector<KVPair> &result, int nums) {
+                      std::vector<KVPair> &result) {
         Data_S find_key(key);
         char *value = nullptr;
         int s = db_->interface.Getkv(db_->db, find_key.raw_data(), &value);
@@ -119,7 +132,7 @@ namespace ycsbc {
 
 
     int HWDB::Scan(const std::string &table, const std::string &key, const std::string &max_key, int len, const std::vector<std::string> *fields,
-                      std::vector<std::vector<KVPair>> &result, int nums) {
+                      std::vector<std::vector<KVPair>> &result) {
         void *iter = nullptr;
         int s = db_->interface.RangekvGet(db_->db, Data_S(key).raw_data(), Data_S(max_key).raw_data(), &iter);
         //printf("scan:key:%lu-%s max_key:%lu-%s\n",key.size(), key.c_str(), max_key.size(), max_key.c_str());
@@ -150,7 +163,7 @@ namespace ycsbc {
     }
 
     int HWDB::Insert(const std::string &table, const std::string &key,
-                        std::vector<KVPair> &values, int nums){
+                        std::vector<KVPair> &values){
         int s;
         string value = values.at(0).second;
         //SerializeValues(values,value);
@@ -168,11 +181,11 @@ namespace ycsbc {
         return DB::kOK;
     }
 
-    int HWDB::Update(const std::string &table, const std::string &key, std::vector<KVPair> &values, int nums) {
-        return Insert(table,key,values,nums);
+    int HWDB::Update(const std::string &table, const std::string &key, std::vector<KVPair> &values) {
+        return Insert(table,key,values);
     }
 
-    int HWDB::Delete(const std::string &table, const std::string &key, int nums) {
+    int HWDB::Delete(const std::string &table, const std::string &key) {
         int s;
         s = db_->interface.Delkv(db_->db, Data_S(key).raw_data());
         //printf("delete:key:%lu-%s\n",key.size(),key.c_str());
@@ -185,8 +198,8 @@ namespace ycsbc {
 
     void HWDB::PrintStats() {
         if(noResult) cout<<"read not found:"<<noResult<<endl;
-        char stats[1024];
-        memset(stats, 0, 1024);
+        char stats[4096];
+        memset(stats, 0, 4096);
         db_->interface.PrintStats(db_->db, (char *)&stats);
         cout<<stats<<endl;
     }

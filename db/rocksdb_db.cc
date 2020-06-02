@@ -10,8 +10,8 @@
 using namespace std;
 
 namespace ycsbc {
-    RocksDB::RocksDB(const char *dbfilename, utils::Properties &props) :noResult(0){
-    
+    RocksDB::RocksDB(const char *dbfilename, utils::Properties &props) :noResult(0), cache_(nullptr), dbstats_(nullptr), write_sync_(false){
+        
         //set option
         rocksdb::Options options;
         SetOptions(&options, props);
@@ -40,12 +40,36 @@ namespace ycsbc {
         options->level0_file_num_compaction_trigger = 4;
         options->level0_slowdown_writes_trigger = 8;     
         options->level0_stop_writes_trigger = 12;
-            
+
+        options->use_direct_reads = true;
+        options->use_direct_io_for_flush_and_compaction = true;
+
+        uint64_t nums = stoi(props.GetProperty(CoreWorkload::RECORD_COUNT_PROPERTY));
+        uint32_t key_len = stoi(props.GetProperty(CoreWorkload::KEY_LENGTH));
+        uint32_t value_len = stoi(props.GetProperty(CoreWorkload::FIELD_LENGTH_PROPERTY));
+        uint32_t cache_size = nums * (key_len + value_len) * 10 / 100; //10%
+        if(cache_size < 8 << 20){   //不小于8MB；
+            cache_size = 8 << 20;
+        }
+        cache_ = rocksdb::NewLRUCache(cache_size);
+        if(options->table_factory->GetOptions() != nullptr){
+            rocksdb::BlockBasedTableOptions* table_options = reinterpret_cast<rocksdb::BlockBasedTableOptions*>(options->table_factory->GetOptions());
+            table_options->block_cache = cache_;
+            table_options->filter_policy.reset(rocksdb::NewBloomFilterPolicy(10,false));
+        }
+
+        bool statistics = utils::StrToBool(props["dbstatistics"]);
+        if(statistics){
+            dbstats_ = rocksdb::CreateDBStatistics();
+            options->statistics = dbstats_;
+        }
+
+        write_sync_ = false;    //主要是写日志，
     }
 
 
     int RocksDB::Read(const std::string &table, const std::string &key, const std::vector<std::string> *fields,
-                      std::vector<KVPair> &result, int nums) {
+                      std::vector<KVPair> &result) {
         string value;
         rocksdb::Status s = db_->Get(rocksdb::ReadOptions(),key,&value);
         if(s.ok()) {
@@ -69,7 +93,7 @@ namespace ycsbc {
 
 
     int RocksDB::Scan(const std::string &table, const std::string &key, const std::string &max_key, int len, const std::vector<std::string> *fields,
-                      std::vector<std::vector<KVPair>> &result, int nums) {
+                      std::vector<std::vector<KVPair>> &result) {
          auto it=db_->NewIterator(rocksdb::ReadOptions());
         it->Seek(key);
         std::string val;
@@ -86,7 +110,7 @@ namespace ycsbc {
     }
 
     int RocksDB::Insert(const std::string &table, const std::string &key,
-                        std::vector<KVPair> &values, int nums){
+                        std::vector<KVPair> &values){
         rocksdb::Status s;
         string value;
         SerializeValues(values,value);
@@ -94,7 +118,11 @@ namespace ycsbc {
         for( auto kv : values) {
             printf("put field:key:%lu-%s value:%lu-%s\n",kv.first.size(),kv.first.data(),kv.second.size(),kv.second.data());
         } */
-        s = db_->Put(rocksdb::WriteOptions(), key, value);
+        rocksdb::WriteOptions write_options = rocksdb::WriteOptions();
+        if(write_sync_) {
+            write_options.sync = true;
+        }
+        s = db_->Put(write_options, key, value);
         if(!s.ok()){
             cerr<<"insert error\n"<<endl;
             exit(0);
@@ -103,13 +131,17 @@ namespace ycsbc {
         return DB::kOK;
     }
 
-    int RocksDB::Update(const std::string &table, const std::string &key, std::vector<KVPair> &values, int nums) {
-        return Insert(table,key,values,nums);
+    int RocksDB::Update(const std::string &table, const std::string &key, std::vector<KVPair> &values) {
+        return Insert(table,key,values);
     }
 
-    int RocksDB::Delete(const std::string &table, const std::string &key, int nums) {
+    int RocksDB::Delete(const std::string &table, const std::string &key) {
         rocksdb::Status s;
-        s = db_->Delete(rocksdb::WriteOptions(),key);
+        rocksdb::WriteOptions write_options = rocksdb::WriteOptions();
+        if(write_sync_) {
+            write_options.sync = true;
+        }
+        s = db_->Delete(write_options,key);
         if(!s.ok()){
             cerr<<"Delete error\n"<<endl;
             exit(0);
@@ -122,10 +154,18 @@ namespace ycsbc {
         string stats;
         db_->GetProperty("rocksdb.stats",&stats);
         cout<<stats<<endl;
+
+        if (dbstats_.get() != nullptr) {
+            fprintf(stdout, "STATISTICS:\n%s\n", dbstats_->ToString().c_str());
+        }
     }
 
     RocksDB::~RocksDB() {
         delete db_;
+        if (cache_.get() != nullptr) {
+            // this will leak, but we're shutting down so nobody cares
+            cache_->DisownData();
+        }
     }
 
     void RocksDB::SerializeValues(std::vector<KVPair> &kvs, std::string &value) {
