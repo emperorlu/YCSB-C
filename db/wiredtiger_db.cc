@@ -47,7 +47,7 @@ namespace ycsbc {
         // string direct_io = ",direct_io=[data]"; // [data, log, checkpoint]
         // conn_config += direct_io;
 
-        conn_config += ",cache_size=128MB,";
+        conn_config += ",cache_size=128MB";
 
         // string checkpoint = ",checkpoint=(wait=60,log_size=2G)";
         // conn_config += checkpoint;
