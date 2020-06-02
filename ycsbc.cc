@@ -127,7 +127,7 @@ int main( const int argc, const char *argv[]) {
     uint64_t run_start = get_now_micros();
     for (int i = 0; i < num_threads; ++i) {
       actual_ops.emplace_back(async(launch::async,
-          DelegateClient, db, &wl, total_ops / num_threads, false));
+          DelegateClient, db, &wl, total_ops / num_threads, false, i));
     }
     assert((int)actual_ops.size() == num_threads);
     sum = 0;
@@ -193,7 +193,7 @@ int main( const int argc, const char *argv[]) {
       uint64_t run_start = get_now_micros();
       for (int i = 0; i < num_threads; ++i) {
         actual_ops.emplace_back(async(launch::async,
-            DelegateClient, db, &wl, total_ops / num_threads, false));
+            DelegateClient, db, &wl, total_ops / num_threads, false, i));
       }
       assert((int)actual_ops.size() == num_threads);
       sum = 0;

@@ -9,61 +9,31 @@
 using namespace std;
 
 namespace ycsbc {
-    void (*custom_die)(void) = NULL;
-    const char *progname = "program name not set";
-
-    /*
-    * testutil_die --
-    *     Report an error and abort.
-    */
-    void testutil_die(int e, const char *fmt, ...)
-    {
-        va_list ap;
-
-        /* Flush output to be sure it doesn't mix with fatal errors. */
-        (void)fflush(stdout);
-        (void)fflush(stderr);
-
-        /* Allow test programs to cleanup on fatal error. */
-        if (custom_die != NULL)
-            (*custom_die)();
-
-        fprintf(stderr, "%s: FAILED", progname);
-        if (fmt != NULL) {
-            fprintf(stderr, ": ");
-            va_start(ap, fmt);
-            vfprintf(stderr, fmt, ap);
-            va_end(ap);
-        }
-        if (e != 0)
-            fprintf(stderr, ": %s", wiredtiger_strerror(e));
-        fprintf(stderr, "\n");
-        fprintf(stderr, "process aborting\n");
-
-        abort();
-    }
-
     WiredTiger::WiredTiger(const char *home, utils::Properties &props) :noResult(0){
         WT_SESSION *session;
         //set option
         const char *CONN_CONFIG = SetConnOptions(props).c_str();
             // "create,cache_size=100MB,direct_io=[data],log=(archive=false,enabled=true)";
         /* Open a connection to the database, creating it if necessary. */
-        error_check(wiredtiger_open(home, NULL, CONN_CONFIG, &conn_));
+        wiredtiger_open(home, NULL, CONN_CONFIG, &conn_);
+        assert(conn_ != NULL);
 
         /* Open a session handle for the database. */
-        error_check(conn_->open_session(conn_, NULL, NULL, &session));
+        conn_->open_session(conn_, NULL, NULL, &session);
+        assert(session != NULL);
 
-        const char *CONFIG = SetOptions(props).c_str()
-        error_check(session->create(session, uri_.c_str(), CONFIG));
-
-        // error_check(session->open_cursor(session, uri, NULL, NULL, &cursor));
-        error_check(session->close(session, NULL));
+        const char *CONFIG = SetOptions(props).c_str();
+        int ret = session->create(session, uri_.c_str(), CONFIG);
+        if (ret != 0) {
+            fprintf(stderr, "create error: %s\n", wiredtiger_strerror(ret));
+            exit(1);
+        }
+        session->close(session, NULL);
 
         session_nums_ = stoi(props.GetProperty("threadcount", "1"));
         session_ = new (WT_SESSION *)[session_nums_];
         for (int i = 0; i < session_nums_; i++){
-            error_check(conn_->open_session(conn_, NULL, NULL, &(session[i]));
+            conn_->open_session(conn_, NULL, NULL, &(session[i]);
             assert(session[i] != NULL);
         }
     }
@@ -120,9 +90,13 @@ namespace ycsbc {
     int WiredTiger::Read(const std::string &table, const std::string &key, const std::vector<std::string> *fields,
                       std::vector<KVPair> &result, int nums) {
         WT_CURSOR *cursor;
-        error_check(session_[nums]->open_cursor(session_[nums], uri_.c_str(), NULL, NULL, &cursor));
+        int ret = session_[nums]->open_cursor(session_[nums], uri_.c_str(), NULL, NULL, &cursor));
+        if (ret != 0) {
+            fprintf(stderr, "open_cursor error: %s\n", wiredtiger_strerror(ret));
+            exit(1);
+        }
         cursor->set_key(cursor, key.c_str());
-        int ret = cursor->search(cursor);
+        ret = cursor->search(cursor);
         if(!ret){
             return DB::kOK;
         }else if(ret == WT_NOTFOUND){
@@ -139,13 +113,17 @@ namespace ycsbc {
     int WiredTiger::Scan(const std::string &table, const std::string &key, const std::string &max_key, int len, const std::vector<std::string> *fields,
                       std::vector<std::vector<KVPair>> &result, int nums) {
         WT_CURSOR *cursor;
-        error_check(session_[nums]->open_cursor(session_[nums], uri_.c_str(), NULL, NULL, &cursor));
+        int ret = session_[nums]->open_cursor(session_[nums], uri_.c_str(), NULL, NULL, &cursor));
+        if (ret != 0) {
+            fprintf(stderr, "open_cursor error: %s\n", wiredtiger_strerror(ret));
+            exit(1);
+        }
         cursor->set_key(cursor, key.c_str());
-        int i = 0, ret;
-        while (i < len && (ret = cursor->next(cursor)) == 0) {
+        int i = 0;
+        while (i < len && cursor->next(cursor) == 0) {
             i++;
             const char *key1;
-            error_check(cursor->get_key(cursor, &key1));
+            cursor->get_key(cursor, &key1);
             string key2 = key1;
             if(key2 >= key) break;
         }
@@ -157,13 +135,21 @@ namespace ycsbc {
     int WiredTiger::Insert(const std::string &table, const std::string &key,
                         std::vector<KVPair> &values, int nums){
         WT_CURSOR *cursor;
-        error_check(session_[nums]->open_cursor(session_[nums], uri_.c_str(), NULL, NULL, &cursor));
+        int ret = session_[nums]->open_cursor(session_[nums], uri_.c_str(), NULL, NULL, &cursor));
+        if (ret != 0) {
+            fprintf(stderr, "open_cursor error: %s\n", wiredtiger_strerror(ret));
+            exit(1);
+        }
 
         string value = values.at(0).second;
 
         cursor->set_key(cursor, key.c_str());
         cursor->set_value(cursor, value.c_str());
-        error_check(cursor->insert(cursor));
+        ret = cursor->insert(cursor);
+        if (ret != 0) {
+          fprintf(stderr, "set error: %s\n", wiredtiger_strerror(ret));
+          exit(1);
+        }
         
         return DB::kOK;
     }
@@ -176,11 +162,20 @@ namespace ycsbc {
     }
 
     // int WiredTiger::Delete(const std::string &table, const std::string &key) {return DB::kOK;}
-    int WiredTiger::Delete(const std::string &table, const std::string &key) {
+    int WiredTiger::Delete(const std::string &table, const std::string &key, int nums) {
         WT_CURSOR *cursor;
-        error_check(session_[nums]->open_cursor(session_[nums], uri_.c_str(), NULL, NULL, &cursor));
+        int ret = session_[nums]->open_cursor(session_[nums], uri_.c_str(), NULL, NULL, &cursor));
+        if (ret != 0) {
+            fprintf(stderr, "open_cursor error: %s\n", wiredtiger_strerror(ret));
+            exit(1);
+        }
         cursor->set_key(cursor, key.c_str());
-        error_check(cursor->remove(cursor));
+        if ((ret = cursor->remove(cursor)) != 0) {
+          if (nums == 1 || ret != WT_NOTFOUND) {
+            fprintf(stderr, "del error: key %s %s\n", key, wiredtiger_strerror(ret));
+            exit(1);
+          }
+        }
         return DB::kOK;
     }
 
@@ -188,14 +183,12 @@ namespace ycsbc {
     {
         const char *desc, *pvalue;
         int64_t value;
-        int ret;
 
-        while ((ret = cursor->next(cursor)) == 0) {
-            error_check(cursor->get_value(cursor, &desc, &pvalue, &value));
+        while (cursor->next(cursor) == 0 &&
+            cursor->get_value(cursor, &desc, &pvalue, &value) == 0){
             if (value != 0)
                 printf("%s=%s\n", desc, pvalue);
         }
-        scan_end_check(ret == WT_NOTFOUND);
     }
 
     void WiredTiger::PrintStats() {
@@ -205,20 +198,24 @@ namespace ycsbc {
         // statistics must be set
         WT_CURSOR *cursor;
         WT_SESSION *session;
-        error_check(conn_->open_session(conn_, NULL, NULL, &session));
-        error_check(session->open_cursor(session, "statistics:table:test", NULL, NULL, &cursor));
+        conn_->open_session(conn_, NULL, NULL, &session));
+        int ret = session->open_cursor(session, "statistics:table:test", NULL, NULL, &cursor));
+        if (ret != 0) {
+            fprintf(stderr, "open_cursor error: %s\n", wiredtiger_strerror(ret));
+            exit(1);
+        }
         print_cursor(cursor);
-        error_check(session->close(session, NULL));
+        session->close(session, NULL);
         cout<<stats<<endl;
     }
 
 
     WiredTiger::~WiredTiger() {
         for(int i = 0; i < session_nums_; i++) {
-            error_check(session_[i]->close(session_[i], NULL));
+            session_[i]->close(session_[i], NULL);
         }
         delete session_;
-        error_check(conn_->close(conn_, NULL));
+        conn_->close(conn_, NULL);
         delete conn_;
     }
 
