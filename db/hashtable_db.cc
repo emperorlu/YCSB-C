@@ -19,7 +19,7 @@ using vmp::StringHashtable;
 namespace ycsbc {
 
 int HashtableDB::Read(const string &table, const string &key,
-    const vector<string> *fields, vector<KVPair> &result) {
+    const vector<string> *fields, vector<KVPair> &result, int nums) {
   string key_index(table + key);
   FieldHashtable *field_table = key_table_->Get(key_index.c_str());
   if (!field_table) return DB::kErrorNoData;
@@ -41,7 +41,7 @@ int HashtableDB::Read(const string &table, const string &key,
 }
 
 int HashtableDB::Scan(const string &table, const string &key, const std::string &max_key, int len,
-    const vector<string> *fields, vector<vector<KVPair>> &result) {
+    const vector<string> *fields, vector<vector<KVPair>> &result, int nums) {
   string key_index(table + key);
   vector<KeyHashtable::KVPair> key_pairs =
       key_table_->Entries(key_index.c_str(), len);
@@ -71,7 +71,7 @@ int HashtableDB::Scan(const string &table, const string &key, const std::string 
 }
 
 int HashtableDB::Update(const string &table, const string &key,
-    vector<KVPair> &values) {
+    vector<KVPair> &values, int nums) {
   string key_index(table + key);
   FieldHashtable *field_table = key_table_->Get(key_index.c_str());
   if (!field_table) {
@@ -96,7 +96,7 @@ int HashtableDB::Update(const string &table, const string &key,
 }
 
 int HashtableDB::Insert(const string &table, const string &key,
-    vector<KVPair> &values) {
+    vector<KVPair> &values, int nums) {
   string key_index(table + key);
   FieldHashtable *field_table = key_table_->Get(key_index.c_str());
   if (!field_table) {
@@ -115,7 +115,7 @@ int HashtableDB::Insert(const string &table, const string &key,
   return DB::kOK;
 }
 
-int HashtableDB::Delete(const string &table, const string &key) {
+int HashtableDB::Delete(const string &table, const string &key, int nums) {
   string key_index(table + key);
   FieldHashtable *field_table = key_table_->Remove(key_index.c_str());
   if (!field_table) {

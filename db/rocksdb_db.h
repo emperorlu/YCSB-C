@@ -20,20 +20,20 @@ namespace ycsbc {
         RocksDB(const char *dbfilename, utils::Properties &props);
         int Read(const std::string &table, const std::string &key,
                  const std::vector<std::string> *fields,
-                 std::vector<KVPair> &result);
+                 std::vector<KVPair> &result, int nums);
 
         int Scan(const std::string &table, const std::string &key, const std::string &max_key,
                  int len, const std::vector<std::string> *fields,
-                 std::vector<std::vector<KVPair>> &result);
+                 std::vector<std::vector<KVPair>> &result, int nums);
 
         int Insert(const std::string &table, const std::string &key,
-                   std::vector<KVPair> &values);
+                   std::vector<KVPair> &values, int nums);
 
         int Update(const std::string &table, const std::string &key,
-                   std::vector<KVPair> &values);
+                   std::vector<KVPair> &values, int nums);
 
 
-        int Delete(const std::string &table, const std::string &key);
+        int Delete(const std::string &table, const std::string &key, int nums);
 
         void PrintStats();
 

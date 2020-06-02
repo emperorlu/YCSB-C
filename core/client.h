@@ -9,9 +9,6 @@
 #ifndef YCSB_C_CLIENT_H_
 #define YCSB_C_CLIENT_H_
 
-#ifdef YCSB_WIREDTIGER
-#include "db/wiredtiger_db.h"
-#endif
 
 #include <string>
 #include <atomic>
@@ -28,7 +25,7 @@ namespace ycsbc {
 
 class Client {
  public:
-  Client(DB &db, CoreWorkload &wl) : db_(db), workload_(wl) { }
+  Client(DB &db, CoreWorkload &wl, int nums) : db_(db), workload_(wl), nums_(nums){ }
   
   virtual bool DoInsert();
   virtual bool DoTransaction();
@@ -45,16 +42,14 @@ class Client {
   
   DB &db_;
   CoreWorkload &workload_;
-#ifdef YCSB_WIREDTIGER
-  WT_SESSION *session;
-#endif
+  int nums_;
 };
 
 inline bool Client::DoInsert() {
   std::string key = workload_.NextSequenceKey();
   std::vector<DB::KVPair> pairs;
   workload_.BuildValues(pairs);
-  return (db_.Insert(workload_.NextTable(), key, pairs) == DB::kOK);
+  return (db_.Insert(workload_.NextTable(), key, pairs, nums_) == DB::kOK);
 }
 
 inline bool Client::DoTransaction() {
@@ -101,9 +96,9 @@ inline int Client::TransactionRead() {
   if (!workload_.read_all_fields()) {
     std::vector<std::string> fields;
     fields.push_back("field" + workload_.NextFieldName());
-    return db_.Read(table, key, &fields, result);
+    return db_.Read(table, key, &fields, result, nums_);
   } else {
-    return db_.Read(table, key, NULL, result);
+    return db_.Read(table, key, NULL, result, nums_);
   }
 }
 
@@ -115,9 +110,9 @@ inline int Client::TransactionReadModifyWrite() {
   if (!workload_.read_all_fields()) {
     std::vector<std::string> fields;
     fields.push_back("field" + workload_.NextFieldName());
-    db_.Read(table, key, &fields, result);
+    db_.Read(table, key, &fields, result, nums_);
   } else {
-    db_.Read(table, key, NULL, result);
+    db_.Read(table, key, NULL, result, nums_);
   }
 
   std::vector<DB::KVPair> values;
@@ -126,7 +121,7 @@ inline int Client::TransactionReadModifyWrite() {
   } else {
     workload_.BuildUpdate(values);
   }
-  return db_.Update(table, key, values);
+  return db_.Update(table, key, values, nums_);
 }
 
 inline int Client::TransactionScan() {
@@ -141,9 +136,9 @@ inline int Client::TransactionScan() {
   if (!workload_.read_all_fields()) {
     std::vector<std::string> fields;
     fields.push_back("field" + workload_.NextFieldName());
-    return db_.Scan(table, key, max_key, len, &fields, result);
+    return db_.Scan(table, key, max_key, len, &fields, result, nums_);
   } else {
-    return db_.Scan(table, key, max_key, len, NULL, result);
+    return db_.Scan(table, key, max_key, len, NULL, result, nums_);
   }
 }
 
@@ -156,7 +151,7 @@ inline int Client::TransactionUpdate() {
   } else {
     workload_.BuildUpdate(values);
   }
-  return db_.Update(table, key, values);
+  return db_.Update(table, key, values, nums_);
 }
 
 inline int Client::TransactionInsert() {
@@ -164,7 +159,7 @@ inline int Client::TransactionInsert() {
   const std::string &key = workload_.NextSequenceKey();
   std::vector<DB::KVPair> values;
   workload_.BuildValues(values);
-  return db_.Insert(table, key, values);
+  return db_.Insert(table, key, values, nums_);
 } 
 
 } // ycsbc

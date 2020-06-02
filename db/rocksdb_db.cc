@@ -45,7 +45,7 @@ namespace ycsbc {
 
 
     int RocksDB::Read(const std::string &table, const std::string &key, const std::vector<std::string> *fields,
-                      std::vector<KVPair> &result) {
+                      std::vector<KVPair> &result, int nums) {
         string value;
         rocksdb::Status s = db_->Get(rocksdb::ReadOptions(),key,&value);
         if(s.ok()) {
@@ -69,7 +69,7 @@ namespace ycsbc {
 
 
     int RocksDB::Scan(const std::string &table, const std::string &key, const std::string &max_key, int len, const std::vector<std::string> *fields,
-                      std::vector<std::vector<KVPair>> &result) {
+                      std::vector<std::vector<KVPair>> &result, int nums) {
          auto it=db_->NewIterator(rocksdb::ReadOptions());
         it->Seek(key);
         std::string val;
@@ -86,7 +86,7 @@ namespace ycsbc {
     }
 
     int RocksDB::Insert(const std::string &table, const std::string &key,
-                        std::vector<KVPair> &values){
+                        std::vector<KVPair> &values, int nums){
         rocksdb::Status s;
         string value;
         SerializeValues(values,value);
@@ -103,11 +103,11 @@ namespace ycsbc {
         return DB::kOK;
     }
 
-    int RocksDB::Update(const std::string &table, const std::string &key, std::vector<KVPair> &values) {
-        return Insert(table,key,values);
+    int RocksDB::Update(const std::string &table, const std::string &key, std::vector<KVPair> &values, int nums) {
+        return Insert(table,key,values,nums);
     }
 
-    int RocksDB::Delete(const std::string &table, const std::string &key) {
+    int RocksDB::Delete(const std::string &table, const std::string &key, int nums) {
         rocksdb::Status s;
         s = db_->Delete(rocksdb::WriteOptions(),key);
         if(!s.ok()){

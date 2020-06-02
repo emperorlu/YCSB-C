@@ -34,9 +34,9 @@ void Init(utils::Properties &props);
 void PrintInfo(utils::Properties &props);
 
 int DelegateClient(ycsbc::DB *db, ycsbc::CoreWorkload *wl, const int num_ops,
-    bool is_loading) {
+    bool is_loading, int nums) {
   db->Init();
-  ycsbc::Client client(*db, *wl);
+  ycsbc::Client client(*db, *wl, nums);
   int oks = 0;
   int next_report_ = 0;
   for (int i = 0; i < num_ops; ++i) {
@@ -97,7 +97,7 @@ int main( const int argc, const char *argv[]) {
     total_ops = stoi(props[ycsbc::CoreWorkload::RECORD_COUNT_PROPERTY]);
     for (int i = 0; i < num_threads; ++i) {
       actual_ops.emplace_back(async(launch::async,
-          DelegateClient, db, &wl, total_ops / num_threads, true));
+          DelegateClient, db, &wl, total_ops / num_threads, true, i));
     }
     assert((int)actual_ops.size() == num_threads);
 

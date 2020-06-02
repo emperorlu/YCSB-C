@@ -91,7 +91,7 @@ namespace ycsbc {
 
 
     int HWDB::Read(const std::string &table, const std::string &key, const std::vector<std::string> *fields,
-                      std::vector<KVPair> &result) {
+                      std::vector<KVPair> &result, int nums) {
         Data_S find_key(key);
         char *value = nullptr;
         int s = db_->interface.Getkv(db_->db, find_key.raw_data(), &value);
@@ -119,7 +119,7 @@ namespace ycsbc {
 
 
     int HWDB::Scan(const std::string &table, const std::string &key, const std::string &max_key, int len, const std::vector<std::string> *fields,
-                      std::vector<std::vector<KVPair>> &result) {
+                      std::vector<std::vector<KVPair>> &result, int nums) {
         void *iter = nullptr;
         int s = db_->interface.RangekvGet(db_->db, Data_S(key).raw_data(), Data_S(max_key).raw_data(), &iter);
         //printf("scan:key:%lu-%s max_key:%lu-%s\n",key.size(), key.c_str(), max_key.size(), max_key.c_str());
@@ -150,7 +150,7 @@ namespace ycsbc {
     }
 
     int HWDB::Insert(const std::string &table, const std::string &key,
-                        std::vector<KVPair> &values){
+                        std::vector<KVPair> &values, int nums){
         int s;
         string value = values.at(0).second;
         //SerializeValues(values,value);
@@ -168,11 +168,11 @@ namespace ycsbc {
         return DB::kOK;
     }
 
-    int HWDB::Update(const std::string &table, const std::string &key, std::vector<KVPair> &values) {
-        return Insert(table,key,values);
+    int HWDB::Update(const std::string &table, const std::string &key, std::vector<KVPair> &values, int nums) {
+        return Insert(table,key,values,nums);
     }
 
-    int HWDB::Delete(const std::string &table, const std::string &key) {
+    int HWDB::Delete(const std::string &table, const std::string &key, int nums) {
         int s;
         s = db_->interface.Delkv(db_->db, Data_S(key).raw_data());
         //printf("delete:key:%lu-%s\n",key.size(),key.c_str());
