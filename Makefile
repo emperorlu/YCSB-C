@@ -17,7 +17,7 @@ HWDB_OBJECTS=$(HWDB_SOURCES:.cc=.o)
 
 ##rocksdb
 ROCKSDB_SOURCES= db/rocksdb_db.cc
-ROCKSDB_LIBRARY= -lrocksdb -lz
+ROCKSDB_LIBRARY= -lrocksdb -lz -lzstd -llz4 -lsnappy
 ROCKSDB_DEFS= -DYCSB_ROCKSDB
 ROCKSDB_OBJECTS=$(ROCKSDB_SOURCES:.cc=.o)
 ##
