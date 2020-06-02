@@ -5,7 +5,7 @@ dbpath="/home/hhs/WTtest"
 #moreworkloads="workloads/workloada.spec:workloads/workloadb.spec:workloads/workloadc.spec:workloads/workloadd.spec:workloads/workloade.spec:workloads/workloadf.spec"
 
 if [ -n "$dbpath" ];then
-    rm -f $dbpath/*
+    rm -rf $dbpath/*
 fi
 
 # cmd="./ycsbc -db rocksdb -dbpath $dbpath -threads 4 -P $workload -load true -morerun $moreworkloads -dbstatistics true "

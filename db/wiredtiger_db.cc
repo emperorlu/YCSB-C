@@ -214,9 +214,7 @@ namespace ycsbc {
         for(int i = 0; i < session_nums_; i++) {
             session_[i]->close(session_[i], NULL);
         }
-        delete session_;
         conn_->close(conn_, NULL);
-        delete conn_;
     }
 
     void WiredTiger::SerializeValues(std::vector<KVPair> &kvs, std::string &value) {
