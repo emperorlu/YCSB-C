@@ -31,7 +31,7 @@ namespace ycsbc {
         session->close(session, NULL);
 
         session_nums_ = stoi(props.GetProperty("threadcount", "1"));
-        session_ = new (WT_SESSION *)[session_nums_];
+        session_ = new WT_SESSION *[session_nums_];
         for (int i = 0; i < session_nums_; i++){
             conn_->open_session(conn_, NULL, NULL, &(session[i]);
             assert(session[i] != NULL);
