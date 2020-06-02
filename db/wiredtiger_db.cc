@@ -94,6 +94,7 @@ namespace ycsbc {
         }
         cursor->set_key(cursor, key.c_str());
         ret = cursor->search(cursor);
+        cursor->close(cursor);
         if(!ret){
             return DB::kOK;
         }else if(ret == WT_NOTFOUND){
@@ -124,6 +125,7 @@ namespace ycsbc {
             string key2 = key1;
             if(key2 >= key) break;
         }
+        cursor->close(cursor);
         return DB::kOK;
     }
 
@@ -147,7 +149,7 @@ namespace ycsbc {
           fprintf(stderr, "set error: %s\n", wiredtiger_strerror(ret));
           exit(1);
         }
-        
+        cursor->close(cursor);
         return DB::kOK;
     }
 
@@ -173,6 +175,7 @@ namespace ycsbc {
             exit(1);
           }
         }
+        cursor->close(cursor);
         return DB::kOK;
     }
 
