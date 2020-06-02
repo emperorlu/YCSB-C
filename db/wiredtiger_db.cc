@@ -2,7 +2,7 @@
 // Created by wujy on 1/23/19.
 //
 #include <iostream>
-
+#include <sstream>
 
 #include "wiredtiger_db.h"
 #include "lib/coding.h"
@@ -33,8 +33,8 @@ namespace ycsbc {
         session_nums_ = stoi(props.GetProperty("threadcount", "1"));
         session_ = new WT_SESSION *[session_nums_];
         for (int i = 0; i < session_nums_; i++){
-            conn_->open_session(conn_, NULL, NULL, &(session[i]);
-            assert(session[i] != NULL);
+            conn_->open_session(conn_, NULL, NULL, &(session_[i]));
+            assert(session_[i] != NULL);
         }
     }
 
@@ -90,7 +90,7 @@ namespace ycsbc {
     int WiredTiger::Read(const std::string &table, const std::string &key, const std::vector<std::string> *fields,
                       std::vector<KVPair> &result, int nums) {
         WT_CURSOR *cursor;
-        int ret = session_[nums]->open_cursor(session_[nums], uri_.c_str(), NULL, NULL, &cursor));
+        int ret = session_[nums]->open_cursor(session_[nums], uri_.c_str(), NULL, NULL, &cursor);
         if (ret != 0) {
             fprintf(stderr, "open_cursor error: %s\n", wiredtiger_strerror(ret));
             exit(1);
@@ -113,7 +113,7 @@ namespace ycsbc {
     int WiredTiger::Scan(const std::string &table, const std::string &key, const std::string &max_key, int len, const std::vector<std::string> *fields,
                       std::vector<std::vector<KVPair>> &result, int nums) {
         WT_CURSOR *cursor;
-        int ret = session_[nums]->open_cursor(session_[nums], uri_.c_str(), NULL, NULL, &cursor));
+        int ret = session_[nums]->open_cursor(session_[nums], uri_.c_str(), NULL, NULL, &cursor);
         if (ret != 0) {
             fprintf(stderr, "open_cursor error: %s\n", wiredtiger_strerror(ret));
             exit(1);
@@ -135,7 +135,7 @@ namespace ycsbc {
     int WiredTiger::Insert(const std::string &table, const std::string &key,
                         std::vector<KVPair> &values, int nums){
         WT_CURSOR *cursor;
-        int ret = session_[nums]->open_cursor(session_[nums], uri_.c_str(), NULL, NULL, &cursor));
+        int ret = session_[nums]->open_cursor(session_[nums], uri_.c_str(), NULL, NULL, &cursor);
         if (ret != 0) {
             fprintf(stderr, "open_cursor error: %s\n", wiredtiger_strerror(ret));
             exit(1);
@@ -164,7 +164,7 @@ namespace ycsbc {
     // int WiredTiger::Delete(const std::string &table, const std::string &key) {return DB::kOK;}
     int WiredTiger::Delete(const std::string &table, const std::string &key, int nums) {
         WT_CURSOR *cursor;
-        int ret = session_[nums]->open_cursor(session_[nums], uri_.c_str(), NULL, NULL, &cursor));
+        int ret = session_[nums]->open_cursor(session_[nums], uri_.c_str(), NULL, NULL, &cursor);
         if (ret != 0) {
             fprintf(stderr, "open_cursor error: %s\n", wiredtiger_strerror(ret));
             exit(1);
@@ -172,7 +172,7 @@ namespace ycsbc {
         cursor->set_key(cursor, key.c_str());
         if ((ret = cursor->remove(cursor)) != 0) {
           if (nums == 1 || ret != WT_NOTFOUND) {
-            fprintf(stderr, "del error: key %s %s\n", key, wiredtiger_strerror(ret));
+            fprintf(stderr, "del error: key %s %s\n", key.c_str(), wiredtiger_strerror(ret));
             exit(1);
           }
         }
@@ -198,8 +198,8 @@ namespace ycsbc {
         // statistics must be set
         WT_CURSOR *cursor;
         WT_SESSION *session;
-        conn_->open_session(conn_, NULL, NULL, &session));
-        int ret = session->open_cursor(session, "statistics:table:test", NULL, NULL, &cursor));
+        conn_->open_session(conn_, NULL, NULL, &session);
+        int ret = session->open_cursor(session, "statistics:table:test", NULL, NULL, &cursor);
         if (ret != 0) {
             fprintf(stderr, "open_cursor error: %s\n", wiredtiger_strerror(ret));
             exit(1);
