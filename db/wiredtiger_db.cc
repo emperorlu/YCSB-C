@@ -12,18 +12,15 @@ namespace ycsbc {
     WiredTiger::WiredTiger(const char *home, utils::Properties &props) :noResult(0){
         WT_SESSION *session;
         //set option
-        const char *CONN_CONFIG = SetConnOptions(props).c_str();
-            // "create,cache_size=100MB,direct_io=[data],log=(archive=false,enabled=true)";
         /* Open a connection to the database, creating it if necessary. */
-        wiredtiger_open(home, NULL, CONN_CONFIG, &conn_);
+        wiredtiger_open(home, NULL, SetConnOptions(props).c_str(), &conn_);
         assert(conn_ != NULL);
 
         /* Open a session handle for the database. */
         conn_->open_session(conn_, NULL, NULL, &session);
         assert(session != NULL);
 
-        const char *CONFIG = SetOptions(props).c_str();
-        int ret = session->create(session, uri_.c_str(), CONFIG);
+        int ret = session->create(session, uri_.c_str(), SetOptions(props).c_str());
         if (ret != 0) {
             fprintf(stderr, "create error: %s\n", wiredtiger_strerror(ret));
             exit(1);
