@@ -20,7 +20,7 @@ namespace ycsbc {
         conn_->open_session(conn_, NULL, NULL, &session);
         assert(session != NULL);
 
-        int ret = session->create(session, uri_.c_str(), SetOptions(props).c_str());
+        int ret = session->create(session, uri_.c_str(), SetCreateOptions(props).c_str());
         if (ret != 0) {
             fprintf(stderr, "create error: %s\n", wiredtiger_strerror(ret));
             exit(1);
@@ -37,14 +37,21 @@ namespace ycsbc {
 
     std::string WiredTiger::SetConnOptions(utils::Properties &props) {
         //
-        std::string conn_config = "" ;
+        uint64_t nums = stoi(props.GetProperty(CoreWorkload::RECORD_COUNT_PROPERTY));
+        uint32_t key_len = stoi(props.GetProperty(CoreWorkload::KEY_LENGTH));
+        uint32_t value_len = stoi(props.GetProperty(CoreWorkload::FIELD_LENGTH_PROPERTY));
+        uint32_t cache_size = nums * (key_len + value_len) * 10 / 100;
 
-        conn_config += "create";
+        std::stringstream conn_config;
+        conn_config.str("");
+
+        conn_config << "create";
 
         // string direct_io = ",direct_io=[data]"; // [data, log, checkpoint]
         // conn_config += direct_io;
 
-        conn_config += ",cache_size=128MB";
+        conn_config << ",cache_size=";
+        conn_config << cache_size;
 
         // string checkpoint = ",checkpoint=(wait=60,log_size=2G)";
         // conn_config += checkpoint;
@@ -55,15 +62,15 @@ namespace ycsbc {
         // string log = ",log=(archive=false,enabled=true,path=journal,compressor=snappy)"; // compressor = "lz4", "snappy", "zlib" or "zstd" // 需要重新Configuring WiredTiger
         // conn_config += log;
 
-        conn_config += ",statistics=(fast)"; // all, fast
-        cout << "Connect Config: " << conn_config << endl;
-        return conn_config;
+        conn_config << ",statistics=(fast)"; // all, fast
+        cout << "Connect Config: " << conn_config.str() << endl;
+        return conn_config.str();
     }
 
-    std::string WiredTiger::SetOptions(utils::Properties &props) {
+    std::string WiredTiger::SetCreateOptions(utils::Properties &props) {
         //
         uri_ = "table:ycsb_wiredtiger" ; //"lsm:ycsb_wiredtiger"
-        std::stringstream config ;
+        std::stringstream config;
         config.str("");
 
         config << "key_format=S,value_format=S";
@@ -78,7 +85,7 @@ namespace ycsbc {
         // config << ",chunk_size=20MB";
         // config << ",bloom_bit_count=10"
         // config << ")";
-        
+
         cout << "Create Config: " << config.str() << endl;
         return config.str();
     }

@@ -57,7 +57,7 @@ namespace ycsbc {
         int session_nums_;
 
         std::string SetConnOptions(utils::Properties &props);
-        std::string SetOptions(utils::Properties &props);
+        std::string SetCreateOptions(utils::Properties &props);
         void SerializeValues(std::vector<KVPair> &kvs, std::string &value);
         void DeSerializeValues(std::string &value, std::vector<KVPair> &kvs);
 
