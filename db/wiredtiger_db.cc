@@ -56,7 +56,7 @@ namespace ycsbc {
         // conn_config += log;
 
         conn_config += ",statistics=(fast)"; // all, fast
-
+        cout << "Connect Config: " << conn_config << endl;
         return conn_config;
     }
 
@@ -79,6 +79,7 @@ namespace ycsbc {
         // config << ",bloom_bit_count=10"
         // config << ")";
         
+        cout << "Create Config: " << config.str() << endl;
         return config.str();
     }
 
