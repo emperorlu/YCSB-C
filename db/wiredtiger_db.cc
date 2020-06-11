@@ -60,7 +60,7 @@ namespace ycsbc {
         // conn_config += extensions;
 
         // string log = ",log=(archive=false,enabled=true,path=journal,compressor=snappy)"; // compressor = "lz4", "snappy", "zlib" or "zstd" // 需要重新Configuring WiredTiger
-        // conn_config += log;
+        conn_config << "log=(enabled=true,file_max=128MB)";
 
         conn_config << ",statistics=(fast)"; // all, fast
         cout << "Connect Config: " << conn_config.str() << endl;
