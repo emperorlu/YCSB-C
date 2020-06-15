@@ -205,18 +205,18 @@ namespace ycsbc {
         memset(stats, 0, 1024);
         // statistics must be set
         WT_CURSOR *cursor;
-        WT_SESSION *session;
         std::stringstream suri;
         suri.str("");
-        suri << "statistics:" << uri_;
-        conn_->open_session(conn_, NULL, NULL, &session);
-        int ret = session->open_cursor(session, suri.str().c_str(), NULL, NULL, &cursor);
-        if (ret != 0) {
-            fprintf(stderr, "open_cursor error: %s\n", wiredtiger_strerror(ret));
-            exit(1);
+        suri << "statistics:session" << uri_;
+        for(int i = 0; i < session_nums_; i++){
+            int ret = session->open_cursor(session_[i], suri.str().c_str(), NULL, "statistics=(all,clear)", &cursor);
+            if (ret != 0) {
+                fprintf(stderr, "open_cursor error: %s\n", wiredtiger_strerror(ret));
+                exit(1);
+            }
+            printf("------ Session %d stats ------", i);
+            print_cursor(cursor);   
         }
-        print_cursor(cursor);
-        session->close(session, NULL);
         cout<<stats<<endl;
     }
 
