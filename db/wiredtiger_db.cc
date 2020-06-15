@@ -60,9 +60,9 @@ namespace ycsbc {
         // conn_config += extensions;
 
         // string log = ",log=(archive=false,enabled=true,path=journal,compressor=snappy)"; // compressor = "lz4", "snappy", "zlib" or "zstd" // 需要重新Configuring WiredTiger
-        conn_config << "log=(enabled=true,file_max=128MB)";
+        conn_config << ",log=(enabled=true,file_max=128MB)";
 
-        conn_config << ",statistics=(fast)"; // all, fast
+        conn_config << ",statistics=(all)"; // all, fast
         cout << "Connect Config: " << conn_config.str() << endl;
         return conn_config.str();
     }
@@ -209,7 +209,7 @@ namespace ycsbc {
         suri.str("");
         suri << "statistics:session" << uri_;
         for(int i = 0; i < session_nums_; i++){
-            int ret = session->open_cursor(session_[i], suri.str().c_str(), NULL, "statistics=(all,clear)", &cursor);
+            int ret = session[i]->open_cursor(session_[i], suri.str().c_str(), NULL, "statistics=(all,clear)", &cursor);
             if (ret != 0) {
                 fprintf(stderr, "open_cursor error: %s\n", wiredtiger_strerror(ret));
                 exit(1);

@@ -111,6 +111,12 @@ int main( const int argc, const char *argv[]) {
     printf("********** load result **********\n");
     printf("loading records:%d  use time:%.3f s  IOPS:%.2f iops (%.2f us/op)\n", sum, 1.0 * use_time*1e-6, 1.0 * sum * 1e6 / use_time, 1.0 * use_time / sum);
     printf("*********************************\n");
+
+    if ( print_stats ) {
+        printf("-------------- db statistics --------------\n");
+        db->PrintStats();
+        printf("-------------------------------------------\n");
+    }
   } 
   if( run ) {
     // Peforms transactions
@@ -226,7 +232,6 @@ int main( const int argc, const char *argv[]) {
         db->PrintStats();
         printf("-------------------------------------------\n");
       }
-
 
     }
     
