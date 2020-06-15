@@ -29,9 +29,12 @@ namespace ycsbc {
 
         session_nums_ = stoi(props.GetProperty("threadcount", "1"));
         session_ = new WT_SESSION *[session_nums_];
+        cursor_ = new WT_CURSOR *[session_nums_];
         for (int i = 0; i < session_nums_; i++){
             conn_->open_session(conn_, NULL, NULL, &(session_[i]));
             assert(session_[i] != NULL);
+            session_[i]->open_cursor(session_[i], uri_.c_str(), NULL, NULL, &cursor_[i]);
+            assert(cursor_[i] != NULL);
         }
     }
 
@@ -94,15 +97,8 @@ namespace ycsbc {
     //                   std::vector<KVPair> &result) {return DB::kOK;}
     int WiredTiger::Read(const std::string &table, const std::string &key, const std::vector<std::string> *fields,
                       std::vector<KVPair> &result, int nums) {
-        WT_CURSOR *cursor;
-        int ret = session_[nums]->open_cursor(session_[nums], uri_.c_str(), NULL, NULL, &cursor);
-        if (ret != 0) {
-            fprintf(stderr, "open_cursor error: %s\n", wiredtiger_strerror(ret));
-            exit(1);
-        }
-        cursor->set_key(cursor, key.c_str());
-        ret = cursor->search(cursor);
-        cursor->close(cursor);
+        cursor_[nums]->set_key(cursor_[nums], key.c_str());
+        ret = cursor_[nums]->search(cursor_[nums]);
         if(!ret){
             return DB::kOK;
         }else if(ret == WT_NOTFOUND){
@@ -118,22 +114,17 @@ namespace ycsbc {
     //                   std::vector<std::vector<KVPair>> &result) {return DB::kOK;}
     int WiredTiger::Scan(const std::string &table, const std::string &key, const std::string &max_key, int len, const std::vector<std::string> *fields,
                       std::vector<std::vector<KVPair>> &result, int nums) {
-        WT_CURSOR *cursor;
-        int ret = session_[nums]->open_cursor(session_[nums], uri_.c_str(), NULL, NULL, &cursor);
-        if (ret != 0) {
-            fprintf(stderr, "open_cursor error: %s\n", wiredtiger_strerror(ret));
-            exit(1);
-        }
-        cursor->set_key(cursor, key.c_str());
+        cursor_[nums]->set_key(cursor_[nums], key.c_str());
+        int exact = 0;
+        cursor_[nums]->search_near(cursor_[nums], &exact);
         int i = 0;
-        while (i < len && cursor->next(cursor) == 0) {
+        while (i < len && cursor_[nums]->next(cursor_[nums]) == 0) {
             i++;
             const char *key1;
-            cursor->get_key(cursor, &key1);
+            cursor_[nums]->get_key(cursor_[nums], &key1);
             string key2 = key1;
             if(key2 >= key) break;
         }
-        cursor->close(cursor);
         return DB::kOK;
     }
 
@@ -141,23 +132,15 @@ namespace ycsbc {
     //                     std::vector<KVPair> &values) {return DB::kOK;}
     int WiredTiger::Insert(const std::string &table, const std::string &key,
                         std::vector<KVPair> &values, int nums){
-        WT_CURSOR *cursor;
-        int ret = session_[nums]->open_cursor(session_[nums], uri_.c_str(), NULL, NULL, &cursor);
-        if (ret != 0) {
-            fprintf(stderr, "open_cursor error: %s\n", wiredtiger_strerror(ret));
-            exit(1);
-        }
-
         string value = values.at(0).second;
 
-        cursor->set_key(cursor, key.c_str());
-        cursor->set_value(cursor, value.c_str());
-        ret = cursor->insert(cursor);
+        cursor_[nums]->set_key(cursor_[nums], key.c_str());
+        cursor_[nums]->set_value(cursor_[nums], value.c_str());
+        ret = cursor_[nums]->insert(cursor_[nums]);
         if (ret != 0) {
           fprintf(stderr, "set error: %s\n", wiredtiger_strerror(ret));
           exit(1);
         }
-        cursor->close(cursor);
         return DB::kOK;
     }
 
@@ -170,20 +153,13 @@ namespace ycsbc {
 
     // int WiredTiger::Delete(const std::string &table, const std::string &key) {return DB::kOK;}
     int WiredTiger::Delete(const std::string &table, const std::string &key, int nums) {
-        WT_CURSOR *cursor;
-        int ret = session_[nums]->open_cursor(session_[nums], uri_.c_str(), NULL, NULL, &cursor);
-        if (ret != 0) {
-            fprintf(stderr, "open_cursor error: %s\n", wiredtiger_strerror(ret));
-            exit(1);
-        }
-        cursor->set_key(cursor, key.c_str());
-        if ((ret = cursor->remove(cursor)) != 0) {
+        cursor_[nums]->set_key(cursor_[nums], key.c_str());
+        if ((ret = cursor_[nums]->remove(cursor_[nums])) != 0) {
           if (nums == 1 || ret != WT_NOTFOUND) {
             fprintf(stderr, "del error: key %s %s\n", key.c_str(), wiredtiger_strerror(ret));
             exit(1);
           }
         }
-        cursor->close(cursor);
         return DB::kOK;
     }
 
@@ -207,15 +183,17 @@ namespace ycsbc {
         WT_CURSOR *cursor;
         std::stringstream suri;
         suri.str("");
-        suri << "statistics:session" << uri_;
+        // suri << "statistics:" << uri_;
+        suri << "statistics:session";
         for(int i = 0; i < session_nums_; i++){
-            int ret = session[i]->open_cursor(session_[i], suri.str().c_str(), NULL, "statistics=(all,clear)", &cursor);
+            int ret = session_[i]->open_cursor(session_[i], suri.str().c_str(), NULL, "statistics=(all,clear)", &cursor);
             if (ret != 0) {
                 fprintf(stderr, "open_cursor error: %s\n", wiredtiger_strerror(ret));
                 exit(1);
             }
-            printf("------ Session %d stats ------", i);
-            print_cursor(cursor);   
+            printf("------ Session %d stats ------\n", i);
+            print_cursor(cursor);  
+            cursor->close(cursor); 
         }
         cout<<stats<<endl;
     }
