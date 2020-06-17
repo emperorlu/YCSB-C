@@ -175,12 +175,22 @@ namespace ycsbc {
         }
     }
 
+    void get_stat(WT_CURSOR *cursor, int stat_field, int64_t *valuep)
+    {
+        const char *desc, *pvalue;
+
+        cursor->set_key(cursor, stat_field);
+        cursor->search(cursor);
+        cursor->get_value(cursor, &desc, &pvalue, valuep);
+    }
+
     void WiredTiger::PrintStats() {
         if(noResult) cout<<"read not found:"<<noResult<<endl;
-        char stats[1024];
-        memset(stats, 0, 1024);
-        // statistics must be set
+        // char stats[1024];
+        // memset(stats, 0, 1024);
+        // statistics must be set in connection Option
         WT_CURSOR *cursor;
+        WT_SESSION *session;
         std::stringstream suri;
         suri.str("");
         // suri << "statistics:" << uri_;
@@ -195,7 +205,28 @@ namespace ycsbc {
             print_cursor(cursor);  
             cursor->close(cursor); 
         }
-        cout<<stats<<endl;
+        {
+            /*! [statistics calculate write amplification] */
+            printf("------------------------------\n");
+            suri.str("");
+            suri << "statistics:" << uri_;
+            conn_->open_session(conn_, NULL, NULL, &(session));
+            session->open_cursor(session, suri.str().c_str(), NULL, NULL, &cursor);
+            int64_t app_insert, app_remove, app_update, fs_writes;
+
+            get_stat(cursor, WT_STAT_DSRC_CURSOR_INSERT_BYTES, &app_insert);
+            get_stat(cursor, WT_STAT_DSRC_CURSOR_REMOVE_BYTES, &app_remove);
+            get_stat(cursor, WT_STAT_DSRC_CURSOR_UPDATE_BYTES, &app_update);
+
+            get_stat(cursor, WT_STAT_DSRC_CACHE_BYTES_WRITE, &fs_writes);
+
+            if (app_insert + app_remove + app_update != 0)
+                printf("Write amplification is %.2lf\n", 
+                (double)fs_writes / (app_insert + app_remove + app_update));
+            cursor->close(cursor); 
+            /*! [statistics calculate write amplification] */
+        }
+        // cout<<stats<<endl;
     }
 
 
