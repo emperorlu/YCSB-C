@@ -80,8 +80,8 @@ namespace ycsbc {
         config << ",prefix_compression=false";
         config << ",checksum=off";
         
-        config << ",internal_page_max=16kb";
-        config << ",leaf_page_max=16kb";
+        config << ",internal_page_max=4kb";
+        config << ",leaf_page_max=4kb";
         config << ",memory_page_max=100MB";
 
         // config << ",lsm=(";
@@ -222,8 +222,11 @@ namespace ycsbc {
             get_stat(cursor, WT_STAT_DSRC_CACHE_BYTES_WRITE, &fs_writes);
 
             if (app_insert + app_remove + app_update != 0)
-                printf("Write amplification is %.2lf\n", 
-                (double)fs_writes / (app_insert + app_remove + app_update));
+                printf("Write amplification is %.2lf\n" \
+                "Real write_size:%.3f MB  Op write_size:%.3f MB\n", \
+                (double)fs_writes / (app_insert + app_remove + app_update), \
+                1.0 * fs_writes / (1024 * 1024), \
+                1.0 * (app_insert + app_remove + app_update) / (1024 * 1024));
             cursor->close(cursor); 
             /*! [statistics calculate write amplification] */
         }
