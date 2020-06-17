@@ -195,24 +195,25 @@ namespace ycsbc {
         WT_CURSOR *cursor;
         WT_SESSION *session;
         std::stringstream suri;
-        suri.str("");
-        // suri << "statistics:" << uri_;
-        suri << "statistics:session";
-        for(int i = 0; i < session_nums_; i++){
-            int ret = session_[i]->open_cursor(session_[i], suri.str().c_str(), NULL, "statistics=(all,clear)", &cursor);
-            if (ret != 0) {
-                fprintf(stderr, "open_cursor error: %s\n", wiredtiger_strerror(ret));
-                exit(1);
+        {
+            suri.str("");
+            suri << "statistics:session";
+            for(int i = 0; i < session_nums_; i++){
+                int ret = session_[i]->open_cursor(session_[i], suri.str().c_str(), NULL, "statistics=(all,clear)", &cursor);
+                if (ret != 0) {
+                    fprintf(stderr, "open_cursor error: %s\n", wiredtiger_strerror(ret));
+                    exit(1);
+                }
+                printf("------ Session %d stats ------\n", i);
+                print_cursor(cursor);  
+                cursor->close(cursor); 
             }
-            printf("------ Session %d stats ------\n", i);
-            print_cursor(cursor);  
-            cursor->close(cursor); 
         }
         {
             /*! [statistics calculate write amplification] */
             printf("------------------------------\n");
             suri.str("");
-            suri << "statistics:" ;
+            suri << "statistics:" << uri_;
             conn_->open_session(conn_, NULL, NULL, &(session));
             session->open_cursor(session, suri.str().c_str(), NULL, NULL, &cursor);
             int64_t app_insert, app_remove, app_update, fs_writes, log_writes;
@@ -222,22 +223,28 @@ namespace ycsbc {
             get_stat(cursor, WT_STAT_DSRC_CURSOR_UPDATE_BYTES, &app_update);
 
             get_stat(cursor, WT_STAT_DSRC_CACHE_BYTES_WRITE, &fs_writes);
-	    get_stat(cursor, WT_STAT_CONN_LOG_BYTES_WRITTEN, &log_writes);
+	        get_stat(cursor, WT_STAT_CONN_LOG_BYTES_WRITTEN, &log_writes);
 
             if (app_insert + app_remove + app_update != 0)
                 printf("Write amplification is %.2lf\n" \
                 "Real write_size:%.3f MB  Op write_size:%.3f MB\n" \
-		"Log write_size:%.3f MB\n", \
+		        "Log write_size:%.3f MB\n", \
                 (double)fs_writes / (app_insert + app_remove + app_update), \
                 1.0 * fs_writes / (1024 * 1024), \
                 1.0 * (app_insert + app_remove + app_update) / (1024 * 1024), \
-		1.0 * log_writes / (1024 * 1024));
-	    printf("------------------------------\n");
-	    cursor->reset(cursor);
-	    print_cursor(cursor);
-            cursor->close(cursor); 
+		        1.0 * log_writes / (1024 * 1024));
+	        printf("------------------------------\n");
+            cursor->close(cursor);
             /*! [statistics calculate write amplification] */
         }
+        {
+            suri.str("");
+            suri << "statistics:" ;
+            session->open_cursor(session, suri.str().c_str(), NULL, NULL, &cursor);
+            print_cursor(cursor);
+            cursor->close(cursor); 
+        }
+        session->close(session, NULL);
         // cout<<stats<<endl;
     }
 
