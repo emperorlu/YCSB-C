@@ -98,7 +98,7 @@ namespace ycsbc {
     int WiredTiger::Read(const std::string &table, const std::string &key, const std::vector<std::string> *fields,
                       std::vector<KVPair> &result, int nums) {
         cursor_[nums]->set_key(cursor_[nums], key.c_str());
-        ret = cursor_[nums]->search(cursor_[nums]);
+        int ret = cursor_[nums]->search(cursor_[nums]);
         if(!ret){
             return DB::kOK;
         }else if(ret == WT_NOTFOUND){
@@ -136,7 +136,7 @@ namespace ycsbc {
 
         cursor_[nums]->set_key(cursor_[nums], key.c_str());
         cursor_[nums]->set_value(cursor_[nums], value.c_str());
-        ret = cursor_[nums]->insert(cursor_[nums]);
+        int ret = cursor_[nums]->insert(cursor_[nums]);
         if (ret != 0) {
           fprintf(stderr, "set error: %s\n", wiredtiger_strerror(ret));
           exit(1);
@@ -153,6 +153,7 @@ namespace ycsbc {
 
     // int WiredTiger::Delete(const std::string &table, const std::string &key) {return DB::kOK;}
     int WiredTiger::Delete(const std::string &table, const std::string &key, int nums) {
+        int ret = 0;
         cursor_[nums]->set_key(cursor_[nums], key.c_str());
         if ((ret = cursor_[nums]->remove(cursor_[nums])) != 0) {
           if (nums == 1 || ret != WT_NOTFOUND) {

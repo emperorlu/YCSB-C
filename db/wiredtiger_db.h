@@ -53,7 +53,7 @@ namespace ycsbc {
     private:
         WT_CONNECTION *conn_;
         WT_SESSION **session_;
-        WT_SESSION **cursor_;
+        WT_CURSOR **cursor_;
         std::string uri_;
         unsigned noResult;
         int session_nums_;
