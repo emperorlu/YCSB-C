@@ -54,8 +54,8 @@ namespace ycsbc {
     HWDB::HWDB(const char *dbfilename, utils::Properties &props) :noResult(0){
     
         //set option
-        SetOptions(dbfilename, props);
-        
+        // SetOptions(dbfilename, props);
+        SetDefaultHwdbConfig(&config_);
 
         int s = CreatHwdb((char *)dbfilename, &config_, &db_);
         if(s != 0){
