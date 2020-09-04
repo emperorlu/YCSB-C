@@ -34,6 +34,22 @@ int DelegateClient(ycsbc::DB *db, ycsbc::CoreWorkload *wl, const int num_ops,
   return oks;
 }
 
+void SetProps(utils::Properties &props) {
+  props.SetProperty("threadcount", "1");
+  props.SetProperty("dbname", "hwdb");
+  props.SetProperty("load", "true");
+  props.SetProperty("morerun", "/home/hhs/workloads/test_workloada.spec");
+  // props.SetProperty("dbstatistics", "true");
+  ifstream input("/home/hhs/workloads/test_workloada.spec");
+  try {
+    props.Load(input);
+  } catch (const string &message) {
+    cout << message << endl;
+    exit(0);
+  }
+  input.close();
+}
+
 string ParseCommandLine(int argc, const char *argv[], utils::Properties &props) {
   int argindex = 3;  // TODO : kvlog read yscb xxx
   string filename;

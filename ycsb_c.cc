@@ -1,12 +1,14 @@
 #include "ycsb_c.h"
 
+#include "db/ycsb.h"
+
 extern "C" {
 
-int YCSB_TEST( const int argc, const char *argv[]) {
+int YCSB_TEST() {
   utils::Properties props;
   Init(props);
-  string file_name = ParseCommandLine(argc, argv, props);
-
+  // string file_name = ParseCommandLine(argc, argv, props);
+  SetProps(props);
   ycsbc::DB *db = ycsbc::DBFactory::CreateDB(props);
   if (!db) {
     cout << "Unknown database name " << props["dbname"] << endl;
@@ -33,7 +35,7 @@ int YCSB_TEST( const int argc, const char *argv[]) {
     ycsbc::CoreWorkload wl;
     wl.Init(props);
 
-    uint64_t load_start = get_now_micros();
+    uint64_t load_start = ycsb_get_now_micros();
     total_ops = stoi(props[ycsbc::CoreWorkload::RECORD_COUNT_PROPERTY]);
     for (int i = 0; i < num_threads; ++i) {
       actual_ops.emplace_back(async(launch::async,
@@ -46,7 +48,7 @@ int YCSB_TEST( const int argc, const char *argv[]) {
       assert(n.valid());
       sum += n.get();
     }
-    uint64_t load_end = get_now_micros();
+    uint64_t load_end = ycsb_get_now_micros();
     uint64_t use_time = load_end - load_start;
     printf("********** load result **********\n");
     printf("loading records:%d  use time:%.3f s  IOPS:%.2f iops (%.2f us/op)\n", sum, 1.0 * use_time*1e-6, 1.0 * sum * 1e6 / use_time, 1.0 * use_time / sum);
@@ -70,7 +72,7 @@ int YCSB_TEST( const int argc, const char *argv[]) {
 
     actual_ops.clear();
     total_ops = stoi(props[ycsbc::CoreWorkload::OPERATION_COUNT_PROPERTY]);
-    uint64_t run_start = get_now_micros();
+    uint64_t run_start = ycsb_get_now_micros();
     for (int i = 0; i < num_threads; ++i) {
       actual_ops.emplace_back(async(launch::async,
           DelegateClient, db, &wl, total_ops / num_threads, false, i));
@@ -81,7 +83,7 @@ int YCSB_TEST( const int argc, const char *argv[]) {
       assert(n.valid());
       sum += n.get();
     }
-    uint64_t run_end = get_now_micros();
+    uint64_t run_end = ycsb_get_now_micros();
     uint64_t use_time = run_end - run_start;
 
     uint64_t temp_cnt[ycsbc::Operation::READMODIFYWRITE + 1];
@@ -136,7 +138,7 @@ int YCSB_TEST( const int argc, const char *argv[]) {
 
       actual_ops.clear();
       total_ops = stoi(props[ycsbc::CoreWorkload::OPERATION_COUNT_PROPERTY]);
-      uint64_t run_start = get_now_micros();
+      uint64_t run_start = ycsb_get_now_micros();
       for (int i = 0; i < num_threads; ++i) {
         actual_ops.emplace_back(async(launch::async,
             DelegateClient, db, &wl, total_ops / num_threads, false, i));
@@ -147,7 +149,7 @@ int YCSB_TEST( const int argc, const char *argv[]) {
         assert(n.valid());
         sum += n.get();
       }
-      uint64_t run_end = get_now_micros();
+      uint64_t run_end = ycsb_get_now_micros();
       uint64_t use_time = run_end - run_start;
 
       uint64_t temp_cnt[ycsbc::Operation::READMODIFYWRITE + 1];
@@ -196,10 +198,5 @@ int YCSB_TEST( const int argc, const char *argv[]) {
   delete db;
   return 0;
 }
-
-
-
-
-
     
 }

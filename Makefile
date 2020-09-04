@@ -1,12 +1,20 @@
-
-CC=g++
+CC = g++
+# LDFLAGS = -O0 -pthread -Wno-pointer-to-int-cast -g -msse4.2 -fno-builtin -std=gnu99 -D_GNU_SOURCE -D__DPAX_LINUX_USR__
 CXXFLAGS= -std=c++11 -g -Wall -I./ 
 LDFLAGS= -lpthread 
+DEFS = 
+CFLAGS = -I./include -I../include -I../../core/ -I../../../include/infrastructure/lwt/ -I../../../include \
+		-I../../../include/infrastructure/diagnose/ -I../../../include/infrastructure/tracepoint/ \
+		-I../../../include/infrastructure/umm/ -I../../../include/infrastructure/product_adapter/unifystorage/ \
+		-I../../../include/infrastructure/upf -I../../../include/framework/ -I../../../include/framwork/ftds -I../../../include/drv/ -I../../../include/ctrl -I../../../include/infrastructure/tf/ \
+		-I../../../include/infrastructure/osax/ -I../../../include/util -I../../../include/infrastructure/log/ \
+		-I../../../../../third_party_groupware/HUAWEI_OFA_LINUX/common/include/ \
 
-DSWARE_BASEDIR := ../../..
-BUILD_DIR := $(shell pwd)
 
-LIB_SOURCES= \
+CFLAGS += $(DEFS)
+AR = ar
+ARFLAGS = rs
+LIB_SOURCES =  \
 		core/core_workload.cc  \
 		db/db_factory.cc   \
 		db/hashtable_db.cc  \
@@ -14,35 +22,33 @@ LIB_SOURCES= \
 		db/hwdb_db.cc \
 		ycsb_c.cc \
 
-m_src = $(LIB_SOURCES) $(HWDB_SOURCES)
-m_lib = libycsb.a
+LIBOBJECTS = \
+		core_workload.o  \
+		db_factory.o   \
+		hashtable_db.o  \
+		ycsb.o \
+		hwdb_db.o \
+		ycsb_c.o \
 
-src=$(BUILD_DIR)
-dst=$(BUILD_DIR)
+TARGET_OBJS = $(LIB_SOURCES:.cc=)
 
-m_objs = $(subst .c,.o,$(m_src))
-dst-objs = $(addprefix $(dst)/, $(m_objs))
+LIBRARY = libycsb.a
 
-dst-obj = $(dst)/$(addsuffix .o, $(basename $(m_lib)))
-dst-lib = $(dst)/$(m_lib)
+.PHONY: clean
+default:  all
 
-all: $(dst-lib)
+all:  clean $(LIBRARY) 
 
-.PHONY: FORCE
+clean: 
+	rm -f $(LIBRARY)
+	rm -f $(LIBOBJECTS)
 
-$(dst)/%.o: $(src)/%.c FORCE
-	@echo obj is $@
-	@echo src is @<
-	$(CC) -c $(CXXFLAGS) $(LDFLAGS) $< -o $@
+$(LIBOBJECTS): 
+	for sou_file in $(TARGET_OBJS) ; do \
+	$(CC) $(CFLAGS) $(LDFLAGS) -c $$sou_file.cc; \
+	done;
 
-$(dst-lib): $(dst-objs)
-	$(LD) -r $(dst-objs) -o $(dst-obj)
-	$(AR) crus $(dst-lib) $(dst-obj)
-	$(CP) -f $(dst-lib) $(DSWARE_BASEDIR)/build/lib
-
-clean:
-	$(RM) -f *.a
-	$(RM) -f *.o
-	$(RM) -f */*.o
-
-
+#(LIBRARY): $(LIBOBJECTS)
+#	rm -f $@
+#	$(AR) $(ARFLAGS) $@ $^
+#	cp $@ ../../../build/lib

@@ -19,6 +19,7 @@ using namespace std;
 void UsageMessage(const char *command);
 bool StrStartWith(const char *str, const char *pre);
 string ParseCommandLine(int argc, const char *argv[], utils::Properties &props);
+void SetProps(utils::Properties &props);
 void Init(utils::Properties &props);
 void PrintInfo(utils::Properties &props);
 
