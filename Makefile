@@ -45,10 +45,10 @@ clean:
 
 $(LIBOBJECTS): 
 	for sou_file in $(TARGET_OBJS) ; do \
-	$(CC) $(CFLAGS) $(LDFLAGS) -c $$sou_file.cc; \
+	$(CC) $(CXXFLAGS) $(LDFLAGS) -c $$sou_file.cc; \
 	done;
 
-#(LIBRARY): $(LIBOBJECTS)
-#	rm -f $@
-#	$(AR) $(ARFLAGS) $@ $^
-#	cp $@ ../../../build/lib
+$(LIBRARY): $(LIBOBJECTS)
+	rm -f $@
+	$(AR) $(ARFLAGS) $@ $^
+	cp $@ ../../../build/lib
