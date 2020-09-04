@@ -11,7 +11,7 @@
 #include <string>
 #include "db/basic_db.h"
 
-#include "db/hwdb_db.h"
+#include "db/pelagodb_db.h"
 
 
 using namespace std;
@@ -22,9 +22,9 @@ DB* DBFactory::CreateDB(utils::Properties &props) {
   if (props["dbname"] == "basic") {
     return new BasicDB;
   } 
-  else if (props["dbname"] == "hwdb") {
+  else if (props["dbname"] == "pelagodb") {
     std::string dbpath = props.GetProperty("dbpath","/tmp/test-hwdb");
-    return new HWDB(dbpath.c_str(), props);
+    return new PELAGODB(dbpath.c_str(), props);
   } 
   else return NULL;
 }

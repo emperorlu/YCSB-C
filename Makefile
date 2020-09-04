@@ -19,7 +19,7 @@ LIB_SOURCES =  \
 		db/db_factory.cc   \
 		db/hashtable_db.cc  \
 		db/ycsb.cc \
-		db/hwdb_db.cc \
+		db/pelago_db.cc \
 		ycsb_c.cc \
 
 LIBOBJECTS = \
@@ -27,7 +27,7 @@ LIBOBJECTS = \
 		db_factory.o   \
 		hashtable_db.o  \
 		ycsb.o \
-		hwdb_db.o \
+		pelago_db.o \
 		ycsb_c.o \
 
 TARGET_OBJS = $(LIB_SOURCES:.cc=)
