@@ -1,11 +1,11 @@
 #ifndef YCSB_LWT_THREAD_H
 #define YCSB_LWT_THREAD_H
 
+#include "atomic.h"
 #ifdef __cplusplus   
 extern "C"{
 #endif /* __cplusplus */
 
-#include "atomic.h"
 #include "dplwt_api.h"
 #include "pool_pub.h"
 
