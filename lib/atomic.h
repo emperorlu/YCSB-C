@@ -7,33 +7,32 @@
 #ifdef __cplusplus   
 extern "C"{
 #endif /* __cplusplus */
-#include "/usr/include/vos/lvos_atomic.h"
+#include "dpax_atomic_redef.h"
 
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */
+#define atomic_int_t   atomic64_t
+#define atomic_bool_t  atomic64_t
+#define atomic_uint32_t  atomic64_t
+#define atomic_uint64_t atomic64_t
 
-#define atomic_int_t   atomic_t
-#define atomic_bool_t  atomic_t
-#define atomic_uint32_t  atomic_t
-#define atomic_uint64_t atomic_t
-
-#define atomic_store_explicit(ptr, val, mo) atomic_set(ptr, val)
-#define atomic_exchange_explicit(ptr, val, mo) atomic_set(ptr, val)
+#define atomic_store_explicit(ptr, val, mo) atomic64_set(ptr, val)
+#define atomic_exchange_explicit(ptr, val, mo) atomic64_set(ptr, val)
 
 #define atomic_init(ptr, val) atomic_store_explicit(ptr, val, __ATOMIC_RELAXED)
 
 #define atomic_store(ptr, val) atomic_store_explicit(ptr, val, __ATOMIC_SEQ_CST)
 
-#define atomic_load_explicit(ptr, mo) atomic_read(ptr)
+#define atomic_load_explicit(ptr, mo) atomic64_read(ptr)
 
 #define atomic_load(ptr) atomic_load_explicit(ptr, __ATOMIC_SEQ_CST)
 
-#define atomic_fetch_add_explicit(ptr, val, mo) atomic_add_return(val, ptr)
+#define atomic_fetch_add_explicit(ptr, val, mo) atomic64_add_return(val, ptr)
 
 #define atomic_fetch_add(ptr, val) atomic_fetch_add_explicit(ptr, val, __ATOMIC_SEQ_CST)
 
-#define atomic_fetch_sub_explicit(ptr, val, mo) atomic_sub_return(val, ptr)
+#define atomic_fetch_sub_explicit(ptr, val, mo) atomic64_sub_return(val, ptr)
 
 #define atomic_fetch_sub(ptr, val) atomic_fetch_sub_explicit(ptr, val, __ATOMIC_SEQ_CST)
 

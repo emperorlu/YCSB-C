@@ -7,13 +7,16 @@ extern "C"{
 #endif /* __cplusplus */
 
 #include "dplwt_api.h"
+#include "dpax_lock.h"
 #include "pool_pub.h"
 
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */
 
-static void LwtCall(const char* label, int result) {
+#define MY_PID 2
+
+static inline void LwtCall(const char* label, int result) {
     if (result != 0) {
         fprintf(stderr, "LWT %s: %s\n", label, strerror(result));
         abort();
@@ -36,7 +39,10 @@ static inline void thread_add_task(void (*function)(void* arg), void* arg, int b
     if (byId) {
         DPLWT_BYID_DISPATCH_SET(&attr);
     }
-    int result = DPLWT_CREATE(&lwt_id, function, arg, &attr, REQ_STAT_TYPE_298);
+    int result = DPLWT_CREATE(&lwt_id, function, arg, &attr, 1);
+    if(result != 0){
+        assert(0);
+    }
 }
 
 /*

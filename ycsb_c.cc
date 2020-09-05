@@ -38,7 +38,7 @@ SharedState *CreatSharedState(int num) {
 
 void DeleteSharedState(SharedState **sh) {
   SharedState *temp = *sh;
-  LockFree(&temp->lock)；
+  LockFree(&temp->lock);
   CondFree(&temp->cond);
   free(temp);
   *sh = NULL;
@@ -54,7 +54,6 @@ ThreadState *CreatThreadState(int id) {
 }
 
 void DeleteThreadState(ThreadState **ts){
-  ThreadState *threadstat = (*ts);
   free(*ts);
   *ts = NULL;
 }
