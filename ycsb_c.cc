@@ -152,6 +152,7 @@ int YCSB_TEST() {
       arg[i].thread->is_loading = true;
       arg[i].thread->db = db;
       arg[i].thread->num_ops = total_ops / num_threads;
+      arg[i].thread->wl = &wl;
       arg[i].method = DelegateClient;
       thread_add_task(&ThreadBody, &arg[i], 1, 0);
     }
@@ -212,6 +213,7 @@ int YCSB_TEST() {
       arg[i].thread->is_loading = false;
       arg[i].thread->db = db;
       arg[i].thread->num_ops = total_ops / num_threads;
+      arg[i].thread->wl = &wl;
       arg[i].method = DelegateClient;
       thread_add_task(&ThreadBody, &arg[i], 1, 0);
     }
@@ -297,6 +299,7 @@ int YCSB_TEST() {
         arg[i].thread->is_loading = false;
         arg[i].thread->db = db;
         arg[i].thread->num_ops = total_ops / num_threads;
+        arg[i].thread->wl = &wl;
         arg[i].method = DelegateClient;
         thread_add_task(&ThreadBody, &arg[i], 1, 0);
       }
