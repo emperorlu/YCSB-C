@@ -44,13 +44,13 @@ namespace ycsbc {
 
     PELAGODB::PELAGODB(const char *dbfilename, utils::Properties &props) :noResult(0){
         //set option
-        pelagodb_options_t *op = pelagodb_option_create();
+        pelagodb_options_t *op = pelagodb_options_create();
         if(NULL == op) assert(0);
         pelagodb_options_set_bind_core_id(op, 9);
         char *err = NULL;
         db_ = pelagodb_open(op, "ycsb_pelagodb", &err);
-        if(NULL = db_) {
-            cerr<<"Can't open PELAGODB "<<dbfilename<<" "<<s<<endl;
+        if(NULL == db_) {
+            cerr<<"Can't open PELAGODB "<<dbfilename<<endl;
             pelagodb_options_destroy(op);
             assert(0);
         }
@@ -85,7 +85,7 @@ namespace ycsbc {
 
     int PELAGODB::Scan(const std::string &table, const std::string &key, const std::string &max_key, int len, const std::vector<std::string> *fields,
                       std::vector<std::vector<KVPair>> &result, int nums) {
-        void *iter = nullptr;
+        // void *iter = nullptr;
         int s = 0; //db_->interface.RangekvGet(db_->db, Data_S(key).raw_data(), Data_S(max_key).raw_data(), &iter);
         //printf("scan:key:%lu-%s max_key:%lu-%s\n",key.size(), key.c_str(), max_key.size(), max_key.c_str());
         if(s != 0){
@@ -134,7 +134,7 @@ namespace ycsbc {
             assert(0);
         }
         pelagodb_writebatch_put(wb, Data_S(key).data(), key.size(), snapid, Data_S(value).data(), value.size());
-        pelagodb_write(db, woptions, wb, &err);
+        pelagodb_write(db_, woptions, wb, &err);
         if(NULL != err){
             cerr<<"insert error"<<endl;
             free(err);
@@ -165,7 +165,7 @@ namespace ycsbc {
             assert(0);
         }
         pelagodb_writebatch_delete(wb, Data_S(key).data(), key.size(), snapid);
-        pelagodb_write(db, woptions, wb, &err);
+        pelagodb_write(db_, woptions, wb, &err);
         if(NULL != err){
             cerr<<"delete error"<<endl;
             free(err);
@@ -176,10 +176,10 @@ namespace ycsbc {
 
     void PELAGODB::PrintStats() {
         if(noResult) cout<<"read not found:"<<noResult<<endl;
-        char stats[4096];
-        memset(stats, 0, 4096);
-        db_->interface.PrintStats(db_->db, (char *)&stats);
-        cout<<stats<<endl;
+        // char stats[4096];
+        // memset(stats, 0, 4096);
+        // db_->interface.PrintStats(db_->db, (char *)&stats);
+        // cout<<stats<<endl;
     }
 
 

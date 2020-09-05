@@ -44,7 +44,7 @@ namespace ycsbc {
         ~PELAGODB();
 
     private:
-        void *db_;
+        pelagodb_t *db_;
         unsigned noResult;
 
         void SerializeValues(std::vector<KVPair> &kvs, std::string &value);

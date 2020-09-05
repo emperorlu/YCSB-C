@@ -36,7 +36,7 @@ int DelegateClient(ycsbc::DB *db, ycsbc::CoreWorkload *wl, const int num_ops,
 
 void SetProps(utils::Properties &props) {
   props.SetProperty("threadcount", "1");
-  props.SetProperty("dbname", "hwdb");
+  props.SetProperty("dbname", "pelagodb");
   props.SetProperty("load", "true");
   props.SetProperty("morerun", "/home/hhs/workloads/test_workloada.spec");
   // props.SetProperty("dbstatistics", "true");
