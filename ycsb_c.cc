@@ -1,8 +1,112 @@
 #include "ycsb_c.h"
 
 #include "db/ycsb.h"
+#include "lib/lwt_lock.h"
 
 extern "C" {
+typedef struct _SharedState {
+  lock_t lock;
+  cond_t cond;
+  int total;
+  int num_done;
+  int oks_sum;
+} SharedState;
+
+typedef struct _ThreadState {
+  ycsbc::DB *db;
+  ycsbc::CoreWorkload *wl;
+  int num_ops;
+  bool is_loading;
+  int nums;
+} ThreadState;
+
+typedef struct _ThreadArg {
+  SharedState* shared;
+  ThreadState* thread;
+  int(*method)(ThreadState*);
+} ThreadArg;
+
+SharedState *CreatSharedState(int num) {
+  SharedState *temp = (SharedState *)malloc(sizeof(SharedState));
+  LockInit(&temp->lock);
+  CondInit(&temp->cond, &temp->lock);
+  temp->total = num;
+  temp->num_done = 0;
+  
+  return temp;
+}
+
+void DeleteSharedState(SharedState **sh) {
+  SharedState *temp = *sh;
+  LockFree(&temp->lock);
+  CondFree(&temp->cond);
+  free(temp);
+  *sh = NULL;
+}
+
+ThreadState *CreatThreadState(int id) {
+  ThreadState *temp = (ThreadState *)malloc(sizeof(ThreadState));
+  temp->db = nullptr_t;
+  temp->wl = nullptr_t;
+  temp->nums = id;
+
+  return temp;
+}
+
+void DeleteThreadState(ThreadState **ts){
+  free(*ts);
+  *ts = NULL;
+}
+
+void ThreadBody(void *v) {
+  ThreadArg *arg = (ThreadArg *)(v);
+  SharedState *shared = arg->shared;
+  ThreadState *thread = arg->thread;
+
+  int oks = (arg->method)(thread);
+
+  Lock(&shared->lock);
+  shared->oks_sum += oks;
+  shared->num_done++;
+  if(shared->num_done >= shared->total){
+    SignalAll(&shared->cond);
+  }
+  Unlock(&shared->lock);
+}
+
+int DelegateClient(ThreadState *thread) {
+  ycsbc::DB *db = thread->db;
+  ycsbc::CoreWorkload *wl = thread->wl;
+  int num_ops = thread->num_ops;
+  bool is_loading = thread->num_ops;
+  int nums = thread->nums;
+  
+  db->Init();
+  ycsbc::Client client(*db, *wl, nums);
+  int oks = 0;
+  int next_report_ = 0;
+  for (int i = 0; i < num_ops; ++i) {
+
+    if (i >= next_report_) {
+        if      (next_report_ < 1000)   next_report_ += 100;
+        else if (next_report_ < 5000)   next_report_ += 500;
+        else if (next_report_ < 10000)  next_report_ += 1000;
+        else if (next_report_ < 50000)  next_report_ += 5000;
+        else if (next_report_ < 100000) next_report_ += 10000;
+        else if (next_report_ < 500000) next_report_ += 50000;
+        else                            next_report_ += 100000;
+        fprintf(stderr, "... finished %d ops%30s\r", i, "");
+        fflush(stderr);
+    }
+    if (is_loading) {
+      oks += client.DoInsert();
+    } else {
+      oks += client.DoTransaction();
+    }
+  }
+  db->Close();
+  return oks;
+}
 
 int YCSB_TEST() {
   utils::Properties props;
@@ -37,19 +141,44 @@ int YCSB_TEST() {
 
     uint64_t load_start = ycsb_get_now_micros();
     total_ops = stoi(props[ycsbc::CoreWorkload::RECORD_COUNT_PROPERTY]);
-    for (int i = 0; i < num_threads; ++i) {
-      actual_ops.emplace_back(async(launch::async,
-          DelegateClient, db, &wl, total_ops / num_threads, true, i));
-    }
-    assert((int)actual_ops.size() == num_threads);
 
-    sum = 0;
-    for (auto &n : actual_ops) {
-      assert(n.valid());
-      sum += n.get();
+    SharedState *shared = CreatSharedState(num_threads);
+    ThreadArg *arg = (ThreadArg *)malloc(sizeof(ThreadArg) * num_threads);
+    for (int i = 0; i < num_threads; ++i) {
+      // actual_ops.emplace_back(async(launch::async,
+      //     DelegateClient, db, &wl, total_ops / num_threads, true, i));
+      arg[i].shared = shared;
+      arg[i].thread = CreatThreadState(i);
+      arg[i].thread->is_loading = true;
+      arg[i].thread->db = db;
+      arg[i].thread->num_ops = total_ops / num_threads;
+      arg[i].thread->wl = &wl;
+      arg[i].method = DelegateClient;
+      thread_add_task(&ThreadBody, &arg[i], 1, 0);
     }
+    // assert((int)actual_ops.size() == num_threads);
+
+    Lock(&shared->lock);
+    while(shared->num_done < num_threads){
+      Wait(&shared->cond, &shared->lock);
+    }
+    sum = shared->oks_sum;
+    Unlock(&shared->lock);
+
+    // sum = 0;
+    // for (auto &n : actual_ops) {
+    //   assert(n.valid());
+    //   sum += n.get();
+    // }
     uint64_t load_end = ycsb_get_now_micros();
     uint64_t use_time = load_end - load_start;
+
+    for(int i = 0; i < num_threads; ++i){
+      DeleteThreadState(&arg[i].thread);
+    }
+    DeleteSharedState(&shared);
+    free(arg);
+
     printf("********** load result **********\n");
     printf("loading records:%d  use time:%.3f s  IOPS:%.2f iops (%.2f us/op)\n", sum, 1.0 * use_time*1e-6, 1.0 * sum * 1e6 / use_time, 1.0 * use_time / sum);
     printf("*********************************\n");
@@ -73,18 +202,38 @@ int YCSB_TEST() {
     actual_ops.clear();
     total_ops = stoi(props[ycsbc::CoreWorkload::OPERATION_COUNT_PROPERTY]);
     uint64_t run_start = ycsb_get_now_micros();
+    
+    SharedState *shared = CreatSharedState(num_threads);
+    ThreadArg *arg = (ThreadArg *)malloc(sizeof(ThreadArg) * num_threads);
     for (int i = 0; i < num_threads; ++i) {
-      actual_ops.emplace_back(async(launch::async,
-          DelegateClient, db, &wl, total_ops / num_threads, false, i));
+      // actual_ops.emplace_back(async(launch::async,
+      //     DelegateClient, db, &wl, total_ops / num_threads, true, i));
+      arg[i].shared = shared;
+      arg[i].thread = CreatThreadState(i);
+      arg[i].thread->is_loading = false;
+      arg[i].thread->db = db;
+      arg[i].thread->num_ops = total_ops / num_threads;
+      arg[i].thread->wl = &wl;
+      arg[i].method = DelegateClient;
+      thread_add_task(&ThreadBody, &arg[i], 1, 0);
     }
-    assert((int)actual_ops.size() == num_threads);
-    sum = 0;
-    for (auto &n : actual_ops) {
-      assert(n.valid());
-      sum += n.get();
+    // assert((int)actual_ops.size() == num_threads);
+
+    Lock(&shared->lock);
+    while(shared->num_done < num_threads){
+      Wait(&shared->cond, &shared->lock);
     }
+    sum = shared->oks_sum;
+    Unlock(&shared->lock);
+
     uint64_t run_end = ycsb_get_now_micros();
     uint64_t use_time = run_end - run_start;
+
+    for(int i = 0; i < num_threads; ++i){
+      DeleteThreadState(&arg[i].thread);
+    }
+    DeleteSharedState(&shared);
+    free(arg);
 
     uint64_t temp_cnt[ycsbc::Operation::READMODIFYWRITE + 1];
     uint64_t temp_time[ycsbc::Operation::READMODIFYWRITE + 1];
@@ -139,18 +288,38 @@ int YCSB_TEST() {
       actual_ops.clear();
       total_ops = stoi(props[ycsbc::CoreWorkload::OPERATION_COUNT_PROPERTY]);
       uint64_t run_start = ycsb_get_now_micros();
+      
+      SharedState *shared = CreatSharedState(num_threads);
+      ThreadArg *arg = (ThreadArg *)malloc(sizeof(ThreadArg) * num_threads);
       for (int i = 0; i < num_threads; ++i) {
-        actual_ops.emplace_back(async(launch::async,
-            DelegateClient, db, &wl, total_ops / num_threads, false, i));
+        // actual_ops.emplace_back(async(launch::async,
+        //     DelegateClient, db, &wl, total_ops / num_threads, true, i));
+        arg[i].shared = shared;
+        arg[i].thread = CreatThreadState(i);
+        arg[i].thread->is_loading = false;
+        arg[i].thread->db = db;
+        arg[i].thread->num_ops = total_ops / num_threads;
+        arg[i].thread->wl = &wl;
+        arg[i].method = DelegateClient;
+        thread_add_task(&ThreadBody, &arg[i], 1, 0);
       }
-      assert((int)actual_ops.size() == num_threads);
-      sum = 0;
-      for (auto &n : actual_ops) {
-        assert(n.valid());
-        sum += n.get();
+      // assert((int)actual_ops.size() == num_threads);
+
+      Lock(&shared->lock);
+      while(shared->num_done < num_threads){
+        Wait(&shared->cond, &shared->lock);
       }
+      sum = shared->oks_sum;
+      Unlock(&shared->lock);
+
       uint64_t run_end = ycsb_get_now_micros();
       uint64_t use_time = run_end - run_start;
+
+      for(int i = 0; i < num_threads; ++i){
+        DeleteThreadState(&arg[i].thread);
+      }
+      DeleteSharedState(&shared);
+      free(arg);
 
       uint64_t temp_cnt[ycsbc::Operation::READMODIFYWRITE + 1];
       uint64_t temp_time[ycsbc::Operation::READMODIFYWRITE + 1];

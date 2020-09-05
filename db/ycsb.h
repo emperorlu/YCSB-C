@@ -23,7 +23,4 @@ void SetProps(utils::Properties &props);
 void Init(utils::Properties &props);
 void PrintInfo(utils::Properties &props);
 
-int DelegateClient(ycsbc::DB *db, ycsbc::CoreWorkload *wl, const int num_ops,
-    bool is_loading, int nums);
-
 #endif

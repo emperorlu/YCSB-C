@@ -5,35 +5,6 @@ atomic<uint64_t> ops_cnt[ycsbc::Operation::READMODIFYWRITE + 1];    //操作个�
 atomic<uint64_t> ops_time[ycsbc::Operation::READMODIFYWRITE + 1];   //微秒
 ////
 
-int DelegateClient(ycsbc::DB *db, ycsbc::CoreWorkload *wl, const int num_ops,
-    bool is_loading, int nums) {
-  db->Init();
-  ycsbc::Client client(*db, *wl, nums);
-  int oks = 0;
-  int next_report_ = 0;
-  for (int i = 0; i < num_ops; ++i) {
-
-    if (i >= next_report_) {
-        if      (next_report_ < 1000)   next_report_ += 100;
-        else if (next_report_ < 5000)   next_report_ += 500;
-        else if (next_report_ < 10000)  next_report_ += 1000;
-        else if (next_report_ < 50000)  next_report_ += 5000;
-        else if (next_report_ < 100000) next_report_ += 10000;
-        else if (next_report_ < 500000) next_report_ += 50000;
-        else                            next_report_ += 100000;
-        fprintf(stderr, "... finished %d ops%30s\r", i, "");
-        fflush(stderr);
-    }
-    if (is_loading) {
-      oks += client.DoInsert();
-    } else {
-      oks += client.DoTransaction();
-    }
-  }
-  db->Close();
-  return oks;
-}
-
 void SetProps(utils::Properties &props) {
   props.SetProperty("threadcount", "1");
   props.SetProperty("dbname", "pelagodb");
