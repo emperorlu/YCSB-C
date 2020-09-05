@@ -20,6 +20,7 @@ LIB_SOURCES =  \
 		db/hashtable_db.cc  \
 		db/ycsb.cc \
 		db/hwdb_db.cc \
+		lib/lwt_thread.cc \
 		ycsb_c.cc \
 
 LIBOBJECTS = \
@@ -28,6 +29,7 @@ LIBOBJECTS = \
 		hashtable_db.o  \
 		ycsb.o \
 		hwdb_db.o \
+		lwt_thread.o \
 		ycsb_c.o \
 
 TARGET_OBJS = $(LIB_SOURCES:.cc=)
