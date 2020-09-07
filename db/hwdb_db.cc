@@ -151,8 +151,8 @@ namespace ycsbc {
             val = NULL;
             s = db_->interface.GetNext(iter, &k, &val);
             if(k != NULL && val != NULL){
-                free(k);
-                free(val);
+                freeKvlogShm(KVLOG_SHM_VALUE_DATAS, k);
+                freeKvlogShm(KVLOG_SHM_VALUE_DATAS, val);
             }
             else{
                 ok = false;

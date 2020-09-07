@@ -21,6 +21,7 @@ LIB_SOURCES =  \
 		db/ycsb.cc \
 		db/hwdb_db.cc \
 		lib/lwt_thread.cc \
+		lib/histogram.cc \
 		ycsb_c.cc \
 
 LIBOBJECTS = \
@@ -30,6 +31,7 @@ LIBOBJECTS = \
 		ycsb.o \
 		hwdb_db.o \
 		lwt_thread.o \
+		histogram.o \
 		ycsb_c.o \
 
 TARGET_OBJS = $(LIB_SOURCES:.cc=)

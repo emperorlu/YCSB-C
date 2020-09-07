@@ -1,8 +1,10 @@
 #include "ycsb.h"
 #include "lib/atomic.h"
+#include "lib/histogram.h"
 ////statistics
 atomic_uint64_t ops_cnt[ycsbc::Operation::READMODIFYWRITE + 1];    //操作个数
 atomic_uint64_t ops_time[ycsbc::Operation::READMODIFYWRITE + 1];   //微秒
+HistogramImpl hist_time;
 ////
 
 void SetProps(utils::Properties &props) {

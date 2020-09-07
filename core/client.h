@@ -12,6 +12,7 @@
 
 #include <string>
 #include "lib/atomic.h"
+#include "lib/histogram.h"
 #include "db.h"
 #include "core_workload.h"
 #include "utils.h"
@@ -20,6 +21,7 @@ using namespace std;
 
 extern atomic_uint64_t ops_cnt[ycsbc::Operation::READMODIFYWRITE + 1] ;    //操作个数
 extern atomic_uint64_t ops_time[ycsbc::Operation::READMODIFYWRITE + 1] ;   //微秒
+extern HistogramImpl hist_time;
 
 namespace ycsbc {
 
@@ -55,40 +57,50 @@ inline bool Client::DoInsert() {
 inline bool Client::DoTransaction() {
   int status = -1;
   uint64_t start_time = ycsb_get_now_micros();
-
+  uint64_t end_time = 0;
   switch (workload_.NextOperation()) {
     case READ:
       status = TransactionRead();
-      atomic_fetch_add_explicit(&ops_time[READ], (ycsb_get_now_micros() - start_time ), memory_order_relaxed);
+      end_time = ycsb_get_now_micros();
+      atomic_fetch_add_explicit(&ops_time[READ], (end_time - start_time ), memory_order_relaxed);
       atomic_fetch_add_explicit(&ops_cnt[READ], 1, memory_order_relaxed);
+      hist_time.interface.Add(&hist_time, end_time - start_time);
       // ops_time[READ].fetch_add((ycsb_get_now_micros() - start_time ), std::memory_order_relaxed);
       // ops_cnt[READ].fetch_add(1, std::memory_order_relaxed);
       break;
     case UPDATE:
       status = TransactionUpdate();
-      atomic_fetch_add_explicit(&ops_time[UPDATE], (ycsb_get_now_micros() - start_time ), memory_order_relaxed);
+      end_time = ycsb_get_now_micros();
+      atomic_fetch_add_explicit(&ops_time[UPDATE], (end_time - start_time ), memory_order_relaxed);
       atomic_fetch_add_explicit(&ops_cnt[UPDATE], 1, memory_order_relaxed);
+      hist_time.interface.Add(&hist_time, end_time - start_time);
       // ops_time[UPDATE].fetch_add((ycsb_get_now_micros() - start_time ), std::memory_order_relaxed);
       // ops_cnt[UPDATE].fetch_add(1, std::memory_order_relaxed);
       break;
     case INSERT:
       status = TransactionInsert();
-      atomic_fetch_add_explicit(&ops_time[INSERT], (ycsb_get_now_micros() - start_time ), memory_order_relaxed);
+      end_time = ycsb_get_now_micros();
+      atomic_fetch_add_explicit(&ops_time[INSERT], (end_time - start_time ), memory_order_relaxed);
       atomic_fetch_add_explicit(&ops_cnt[INSERT], 1, memory_order_relaxed);
+      hist_time.interface.Add(&hist_time, end_time - start_time);
       // ops_time[INSERT].fetch_add((ycsb_get_now_micros() - start_time ), std::memory_order_relaxed);
       // ops_cnt[INSERT].fetch_add(1, std::memory_order_relaxed);
       break;
     case SCAN:
       status = TransactionScan();
-      atomic_fetch_add_explicit(&ops_time[SCAN], (ycsb_get_now_micros() - start_time ), memory_order_relaxed);
+      end_time = ycsb_get_now_micros();
+      atomic_fetch_add_explicit(&ops_time[SCAN], (end_time - start_time ), memory_order_relaxed);
       atomic_fetch_add_explicit(&ops_cnt[SCAN], 1, memory_order_relaxed);
+      hist_time.interface.Add(&hist_time, end_time - start_time);
       // ops_time[SCAN].fetch_add((ycsb_get_now_micros() - start_time ), std::memory_order_relaxed);
       // ops_cnt[SCAN].fetch_add(1, std::memory_order_relaxed);
       break;
     case READMODIFYWRITE:
       status = TransactionReadModifyWrite();
-      atomic_fetch_add_explicit(&ops_time[READMODIFYWRITE], (ycsb_get_now_micros() - start_time ), memory_order_relaxed);
+      end_time = ycsb_get_now_micros();
+      atomic_fetch_add_explicit(&ops_time[READMODIFYWRITE], (end_time - start_time ), memory_order_relaxed);
       atomic_fetch_add_explicit(&ops_cnt[READMODIFYWRITE], 1, memory_order_relaxed);
+      hist_time.interface.Add(&hist_time, end_time - start_time);
       // ops_time[READMODIFYWRITE].fetch_add((ycsb_get_now_micros() - start_time ), std::memory_order_relaxed);
       // ops_cnt[READMODIFYWRITE].fetch_add(1, std::memory_order_relaxed);
       break;
