@@ -6,6 +6,7 @@
 
 #include "hwdb_db.h"
 #include "lib/coding.h"
+#include "lib/memalloc.h"
 
 using namespace std;
 
@@ -122,6 +123,7 @@ namespace ycsbc {
             for( auto kv : result) {
                 printf("get field:key:%lu-%s value:%lu-%s\n",kv.first.size(),kv.first.data(),kv.second.size(),kv.second.data());
             } */
+            freeKvlogShm(KVLOG_SHM_VALUE_DATAS, value);
             return DB::kOK;
         }
         else{

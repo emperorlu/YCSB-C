@@ -48,7 +48,7 @@ namespace ycsbc {
         int Delete(const std::string &table, const std::string &key, int nums);
 
         void PrintStats();
-
+        void Close();
         ~HWDB();
 
     private:

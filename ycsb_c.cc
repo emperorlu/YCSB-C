@@ -78,7 +78,7 @@ int DelegateClient(ThreadState *thread) {
   ycsbc::DB *db = thread->db;
   ycsbc::CoreWorkload *wl = thread->wl;
   int num_ops = thread->num_ops;
-  bool is_loading = thread->num_ops;
+  bool is_loading = thread->is_loading;
   int nums = thread->nums;
   
   db->Init();
