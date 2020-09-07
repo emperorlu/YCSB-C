@@ -16,6 +16,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+uint64_t max_uint64 = ~(uint64_t)0;
 double my_sqrt(double x);
 
 int CreateHistogramBucketMapper(HistogramBucketMapper* mapper) {
@@ -87,7 +88,7 @@ void HistogramStatClear(HistogramStat *stat) {
     atomic_init(&stat->num_, 0);
     atomic_init(&stat->sum_, 0);
     atomic_init(&stat->sum_squares_, 0);
-    for(int i = 0; i < stat->num_buckets_; i++){
+    for(uint64_t i = 0; i < stat->num_buckets_; i++){
         atomic_init(&(stat->buckets_[i]), 0);
     }
 }
@@ -286,7 +287,7 @@ char* HistogramStatToString(HistogramStat *stat) {
         // Add hash marks based on percentage; 20 marks for 100%.
         size_t marks = (size_t)(mult * bucket_value / 5 + 0.5);
 
-        for(int i = 0 ; i < marks; i++){
+        for(size_t i = 0 ; i < marks; i++){
             strcat(msg, "#");
         }
         strcat(msg, "\n");

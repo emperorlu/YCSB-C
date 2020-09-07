@@ -41,6 +41,8 @@ namespace ycsbc {
 
         void PrintStats();
 
+        void Close();
+        
         ~PELAGODB();
 
     private:

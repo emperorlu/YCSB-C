@@ -19,7 +19,6 @@
 typedef void* OBJ;
 
 #define MAX_MAP_SIZE 200
-static uint64_t max_uint64 = ~(uint64_t)0;
 
 typedef struct {
     uint64_t bucketValues_[MAX_MAP_SIZE];

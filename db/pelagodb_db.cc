@@ -94,18 +94,16 @@ namespace ycsbc {
             cerr<<"Alloc roptions failed"<<endl;
             assert(0);
         }
-        iter = pelagodb_new_iterator(db_, roptions);
+        iter = pelagodb_iterator_create(db_, roptions);
         if(iter == NULL){
             cerr<<"New iterator failed"<<endl;
             assert(0);
         }
-        std::string val;
-        std::string k;
         int i;
-        for(i = 0; i < len && iter->rep->Valid(); i++){
-            k = iter->rep->key().ToStdString();
-            val = iter->rep->value().ToStdString();
-            iter->rep->Next();
+        for(i = 0; i < len && pelagodb_iterator_valid(iter); i++){
+            pelagodb_iterator_key(iter);
+            pelagodb_iterator_value(iter);
+            pelagodb_itertor_next(iter);
         } 
         pelagodb_iterator_destroy(iter);
         pelagodb_readoptions_destroy(roptions);
