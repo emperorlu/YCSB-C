@@ -1,8 +1,8 @@
 #include "ycsb.h"
-
+#include "lib/atomic.h"
 ////statistics
-atomic<uint64_t> ops_cnt[ycsbc::Operation::READMODIFYWRITE + 1];    //操作个数
-atomic<uint64_t> ops_time[ycsbc::Operation::READMODIFYWRITE + 1];   //微秒
+atomic_uint64_t ops_cnt[ycsbc::Operation::READMODIFYWRITE + 1];    //操作个数
+atomic_uint64_t ops_time[ycsbc::Operation::READMODIFYWRITE + 1];   //微秒
 ////
 
 void SetProps(utils::Properties &props) {

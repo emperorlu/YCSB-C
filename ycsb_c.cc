@@ -32,7 +32,7 @@ SharedState *CreatSharedState(int num) {
   CondInit(&temp->cond, &temp->lock);
   temp->total = num;
   temp->num_done = 0;
-  
+  temp->oks_sum = 0;
   return temp;
 }
 
@@ -46,8 +46,8 @@ void DeleteSharedState(SharedState **sh) {
 
 ThreadState *CreatThreadState(int id) {
   ThreadState *temp = (ThreadState *)malloc(sizeof(ThreadState));
-  temp->db = nullptr_t;
-  temp->wl = nullptr_t;
+  temp->db = NULL;
+  temp->wl = NULL;
   temp->nums = id;
 
   return temp;
@@ -104,7 +104,7 @@ int DelegateClient(ThreadState *thread) {
       oks += client.DoTransaction();
     }
   }
-  db->Close();
+  // db->Close();
   return oks;
 }
 
@@ -135,6 +135,7 @@ int YCSB_TEST() {
   PrintInfo(props);
 
   if( load ) {
+    db->Close();
     // Loads data
     ycsbc::CoreWorkload wl;
     wl.Init(props);
@@ -190,13 +191,16 @@ int YCSB_TEST() {
     }
   } 
   if( run ) {
+    db->Close();
     // Peforms transactions
     ycsbc::CoreWorkload wl;
     wl.Init(props);
 
     for(int j = 0; j < ycsbc::Operation::READMODIFYWRITE + 1; j++){
-      ops_cnt[j].store(0);
-      ops_time[j].store(0);
+      // ops_cnt[j].store(0);
+      atomic_store(&ops_cnt[j], 0);
+      // ops_time[j].store(0);
+      atomic_store(&ops_time[j], 0);
     }
 
     actual_ops.clear();
@@ -239,8 +243,10 @@ int YCSB_TEST() {
     uint64_t temp_time[ycsbc::Operation::READMODIFYWRITE + 1];
 
     for(int j = 0; j < ycsbc::Operation::READMODIFYWRITE + 1; j++){
-      temp_cnt[j] = ops_cnt[j].load(std::memory_order_relaxed);
-      temp_time[j] = ops_time[j].load(std::memory_order_relaxed);
+      // temp_cnt[j] = ops_cnt[j].load(std::memory_order_relaxed);
+      temp_cnt[j] = atomic_load_explicit(&ops_cnt[j], memory_order_relaxed);
+      // temp_time[j] = ops_time[j].load(std::memory_order_relaxed);
+      temp_time[j] = atomic_load_explicit(&ops_time[j], memory_order_relaxed);
     }
 
     printf("********** run result **********\n");
@@ -267,8 +273,10 @@ int YCSB_TEST() {
     }
     for(unsigned int i = 0; i < runfilenames.size(); i++){
       for(int j = 0; j < ycsbc::Operation::READMODIFYWRITE + 1; j++){
-        ops_cnt[j].store(0);
-        ops_time[j].store(0);
+        // ops_cnt[j].store(0);
+        atomic_store(&ops_cnt[j], 0);
+        // ops_time[j].store(0);
+        atomic_store(&ops_time[j], 0);
       }
 
       ifstream input(runfilenames[i]);
@@ -281,6 +289,7 @@ int YCSB_TEST() {
       input.close();
       printf("------ run:%s ------\n",runfilenames[i].c_str());
       PrintInfo(props);
+      db->Close();
       // Peforms transactions
       ycsbc::CoreWorkload wl;
       wl.Init(props);
@@ -325,8 +334,10 @@ int YCSB_TEST() {
       uint64_t temp_time[ycsbc::Operation::READMODIFYWRITE + 1];
 
       for(int j = 0; j < ycsbc::Operation::READMODIFYWRITE + 1; j++){
-        temp_cnt[j] = ops_cnt[j].load(std::memory_order_relaxed);
-        temp_time[j] = ops_time[j].load(std::memory_order_relaxed);
+        // temp_cnt[j] = ops_cnt[j].load(std::memory_order_relaxed);
+        temp_cnt[j] = atomic_load_explicit(&ops_cnt[j], memory_order_relaxed);
+        // temp_time[j] = ops_time[j].load(std::memory_order_relaxed);
+        temp_time[j] = atomic_load_explicit(&ops_time[j], memory_order_relaxed);
       }
 
       printf("********** more run result **********\n");

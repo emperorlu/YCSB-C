@@ -1,7 +1,7 @@
 CC = g++
 # LDFLAGS = -O0 -pthread -Wno-pointer-to-int-cast -g -msse4.2 -fno-builtin -std=gnu99 -D_GNU_SOURCE -D__DPAX_LINUX_USR__
 CXXFLAGS= -std=c++11 -g -Wall -I./ 
-LDFLAGS= -lpthread 
+LDFLAGS= -lpthread -D__DPAX_LINUX_USR__
 DEFS = 
 CFLAGS = -I./include -I../include -I../../core/ -I../../../include/infrastructure/lwt/ -I../../../include \
 		-I../../../include/infrastructure/diagnose/ -I../../../include/infrastructure/tracepoint/ \
@@ -47,7 +47,7 @@ clean:
 
 $(LIBOBJECTS): 
 	for sou_file in $(TARGET_OBJS) ; do \
-	$(CC) $(CXXFLAGS) $(LDFLAGS) -c $$sou_file.cc; \
+	$(CC) $(CXXFLAGS) $(CFLAGS) $(LDFLAGS) -c $$sou_file.cc; \
 	done;
 
 $(LIBRARY): $(LIBOBJECTS)

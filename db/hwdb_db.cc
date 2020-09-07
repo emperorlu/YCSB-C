@@ -196,6 +196,10 @@ namespace ycsbc {
         return DB::kOK;
     }
 
+    void HWDB::Close() {
+        db_->interface.InitStats(db_->db);
+    }
+
     void HWDB::PrintStats() {
         if(noResult) cout<<"read not found:"<<noResult<<endl;
         char stats[4096];
