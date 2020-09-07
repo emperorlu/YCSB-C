@@ -103,7 +103,7 @@ namespace ycsbc {
         for(i = 0; i < len && pelagodb_iterator_valid(iter); i++){
             pelagodb_iterator_key(iter);
             pelagodb_iterator_value(iter);
-            pelagodb_itertor_next(iter);
+            pelagodb_iterator_next(iter);
         } 
         pelagodb_iterator_destroy(iter);
         pelagodb_readoptions_destroy(roptions);
