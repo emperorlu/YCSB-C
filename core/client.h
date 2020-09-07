@@ -12,6 +12,7 @@
 
 #include <string>
 #include "lib/atomic.h"
+#include "lib/histogram.h"
 #include "db.h"
 #include "core_workload.h"
 #include "utils.h"
@@ -20,6 +21,7 @@ using namespace std;
 
 extern atomic_uint64_t ops_cnt[ycsbc::Operation::READMODIFYWRITE + 1] ;    //操作个数
 extern atomic_uint64_t ops_time[ycsbc::Operation::READMODIFYWRITE + 1] ;   //微秒
+extern HistogramImpl hist_time;
 
 namespace ycsbc {
 

@@ -79,6 +79,7 @@ namespace ycsbc {
         else if (nullptr == value) {
             noResult++;
         } 
+        pelagodb_readoptions_destroy(roptions);
         free(value);
         return DB::kOK;
     }
@@ -86,32 +87,28 @@ namespace ycsbc {
 
     int PELAGODB::Scan(const std::string &table, const std::string &key, const std::string &max_key, int len, const std::vector<std::string> *fields,
                       std::vector<std::vector<KVPair>> &result, int nums) {
-        // void *iter = nullptr;
-        int s = 0; //db_->interface.RangekvGet(db_->db, Data_S(key).raw_data(), Data_S(max_key).raw_data(), &iter);
-        //printf("scan:key:%lu-%s max_key:%lu-%s\n",key.size(), key.c_str(), max_key.size(), max_key.c_str());
-        if(s != 0){
-            cerr<<"scan error"<<endl;
-            exit(0);
+        pelagodb_readoptions_t* roptions = NULL;
+        pelagodb_iterator_t *iter = NULL;
+        roptions = pelagodb_readoptions_create();
+        if(NULL == roptions){
+            cerr<<"Alloc roptions failed"<<endl;
+            assert(0);
         }
-        char *val;
-        char *k;
-        bool ok = true;
+        iter = pelagodb_new_iterator(db_, roptions);
+        if(iter == NULL){
+            cerr<<"New iterator failed"<<endl;
+            assert(0);
+        }
+        std::string val;
+        std::string k;
         int i;
-        for(i=0;i < len && ok; i++){
-            k = NULL;
-            val = NULL;
-            s = 0; //db_->interface.GetNext(iter, &k, &val);
-            if(k != NULL && val != NULL){
-                free(k);
-                free(val);
-            }
-            else{
-                ok = false;
-            }
-            
+        for(i = 0; i < len && iter->rep->Valid(); i++){
+            k = iter->rep->key().ToStdString();
+            val = iter->rep->value().ToStdString();
+            iter->rep->Next();
         } 
-        //printf("scan find:i:%d len:%d\n", i , len);
-        // db_->interface.DeleteIterator(&iter);
+        pelagodb_iterator_destroy(iter);
+        pelagodb_readoptions_destroy(roptions);
         return DB::kOK;
     }
 
@@ -141,6 +138,8 @@ namespace ycsbc {
             free(err);
             assert(0);
         }   
+        pelagodb_writeoptions_destroy(woptions);
+        pelagodb_writebatch_destroy(wb);
         return DB::kOK;
     }
 
@@ -183,6 +182,9 @@ namespace ycsbc {
         // cout<<stats<<endl;
     }
 
+    void PELAGODB::Close() {
+        pelagodb_init_stats(db_);
+    }
 
     PELAGODB::~PELAGODB() {
         if(db_) pelagodb_close(db_);
