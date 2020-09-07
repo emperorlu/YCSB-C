@@ -79,6 +79,7 @@ namespace ycsbc {
         else if (nullptr == value) {
             noResult++;
         } 
+        free(value);
         return DB::kOK;
     }
 

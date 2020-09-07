@@ -11,15 +11,15 @@
 
 
 #include <string>
-#include <atomic>
+#include "lib/atomic.h"
 #include "db.h"
 #include "core_workload.h"
 #include "utils.h"
 
 using namespace std;
 
-extern atomic<uint64_t> ops_cnt[ycsbc::Operation::READMODIFYWRITE + 1] ;    //操作个数
-extern atomic<uint64_t> ops_time[ycsbc::Operation::READMODIFYWRITE + 1] ;   //微秒
+extern atomic_uint64_t ops_cnt[ycsbc::Operation::READMODIFYWRITE + 1] ;    //操作个数
+extern atomic_uint64_t ops_time[ycsbc::Operation::READMODIFYWRITE + 1] ;   //微秒
 
 namespace ycsbc {
 
@@ -59,28 +59,38 @@ inline bool Client::DoTransaction() {
   switch (workload_.NextOperation()) {
     case READ:
       status = TransactionRead();
-      ops_time[READ].fetch_add((ycsb_get_now_micros() - start_time ), std::memory_order_relaxed);
-      ops_cnt[READ].fetch_add(1, std::memory_order_relaxed);
+      atomic_fetch_add_explicit(&ops_time[READ], (ycsb_get_now_micros() - start_time ), memory_order_relaxed);
+      atomic_fetch_add_explicit(&ops_cnt[READ], 1, memory_order_relaxed);
+      // ops_time[READ].fetch_add((ycsb_get_now_micros() - start_time ), std::memory_order_relaxed);
+      // ops_cnt[READ].fetch_add(1, std::memory_order_relaxed);
       break;
     case UPDATE:
       status = TransactionUpdate();
-      ops_time[UPDATE].fetch_add((ycsb_get_now_micros() - start_time ), std::memory_order_relaxed);
-      ops_cnt[UPDATE].fetch_add(1, std::memory_order_relaxed);
+      atomic_fetch_add_explicit(&ops_time[UPDATE], (ycsb_get_now_micros() - start_time ), memory_order_relaxed);
+      atomic_fetch_add_explicit(&ops_cnt[UPDATE], 1, memory_order_relaxed);
+      // ops_time[UPDATE].fetch_add((ycsb_get_now_micros() - start_time ), std::memory_order_relaxed);
+      // ops_cnt[UPDATE].fetch_add(1, std::memory_order_relaxed);
       break;
     case INSERT:
       status = TransactionInsert();
-      ops_time[INSERT].fetch_add((ycsb_get_now_micros() - start_time ), std::memory_order_relaxed);
-      ops_cnt[INSERT].fetch_add(1, std::memory_order_relaxed);
+      atomic_fetch_add_explicit(&ops_time[INSERT], (ycsb_get_now_micros() - start_time ), memory_order_relaxed);
+      atomic_fetch_add_explicit(&ops_cnt[INSERT], 1, memory_order_relaxed);
+      // ops_time[INSERT].fetch_add((ycsb_get_now_micros() - start_time ), std::memory_order_relaxed);
+      // ops_cnt[INSERT].fetch_add(1, std::memory_order_relaxed);
       break;
     case SCAN:
       status = TransactionScan();
-      ops_time[SCAN].fetch_add((ycsb_get_now_micros() - start_time ), std::memory_order_relaxed);
-      ops_cnt[SCAN].fetch_add(1, std::memory_order_relaxed);
+      atomic_fetch_add_explicit(&ops_time[SCAN], (ycsb_get_now_micros() - start_time ), memory_order_relaxed);
+      atomic_fetch_add_explicit(&ops_cnt[SCAN], 1, memory_order_relaxed);
+      // ops_time[SCAN].fetch_add((ycsb_get_now_micros() - start_time ), std::memory_order_relaxed);
+      // ops_cnt[SCAN].fetch_add(1, std::memory_order_relaxed);
       break;
     case READMODIFYWRITE:
       status = TransactionReadModifyWrite();
-      ops_time[READMODIFYWRITE].fetch_add((ycsb_get_now_micros() - start_time ), std::memory_order_relaxed);
-      ops_cnt[READMODIFYWRITE].fetch_add(1, std::memory_order_relaxed);
+      atomic_fetch_add_explicit(&ops_time[READMODIFYWRITE], (ycsb_get_now_micros() - start_time ), memory_order_relaxed);
+      atomic_fetch_add_explicit(&ops_cnt[READMODIFYWRITE], 1, memory_order_relaxed);
+      // ops_time[READMODIFYWRITE].fetch_add((ycsb_get_now_micros() - start_time ), std::memory_order_relaxed);
+      // ops_cnt[READMODIFYWRITE].fetch_add(1, std::memory_order_relaxed);
       break;
     default:
       throw utils::Exception("Operation request is not recognized!");
