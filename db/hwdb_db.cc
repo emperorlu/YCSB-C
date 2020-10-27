@@ -70,7 +70,7 @@ namespace ycsbc {
         //
         SetDefaultHwdbConfig(&config_);
         strcpy(config_.fs_path, dbfilename);
-        config_.kLogMaxWriteSize = 32 * 1024 * 1024;  //
+        config_.kLogMaxWriteSize = 128 * 1024 * 1024;  //
         config_.kMaxPthreadNum = 8;
         config_.kPthreadDoFlushJobNum = 5;
         
@@ -98,7 +98,7 @@ namespace ycsbc {
         config_.kLeafCacheBits = 8;  //
 
         config_.kPlogClientType = 3;
-        config_.kLogDirectWrite = 0;
+        config_.kLogDirectWrite = 1;
     
     }
 

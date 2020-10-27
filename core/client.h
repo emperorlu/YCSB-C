@@ -12,6 +12,7 @@
 
 #include <string>
 #include <atomic>
+#include "lib/histogram.h"
 #include "db.h"
 #include "core_workload.h"
 #include "utils.h"
@@ -20,6 +21,7 @@ using namespace std;
 
 extern atomic<uint64_t> ops_cnt[ycsbc::Operation::READMODIFYWRITE + 1] ;    //操作个数
 extern atomic<uint64_t> ops_time[ycsbc::Operation::READMODIFYWRITE + 1] ;   //微秒
+extern HistogramImpl hist_lat;
 
 namespace ycsbc {
 
@@ -49,36 +51,51 @@ inline bool Client::DoInsert() {
   std::string key = workload_.NextSequenceKey();
   std::vector<DB::KVPair> pairs;
   workload_.BuildValues(pairs);
-  return (db_.Insert(workload_.NextTable(), key, pairs, nums_) == DB::kOK);
+  uint64_t start_time = get_now_micros();
+  int status = db_.Insert(workload_.NextTable(), key, pairs, nums_);
+  uint64_t end_time = get_now_micros();
+  hist_lat.interface.Add(&hist_lat, end_time - start_time);
+  return status == DB::kOK;
 }
 
 inline bool Client::DoTransaction() {
   int status = -1;
   uint64_t start_time = get_now_micros();
+  uint64_t end_time = 0;
 
   switch (workload_.NextOperation()) {
     case READ:
       status = TransactionRead();
+      end_time = get_now_micros();
+      hist_lat.interface.Add(&hist_lat, end_time - start_time);
       ops_time[READ].fetch_add((get_now_micros() - start_time ), std::memory_order_relaxed);
       ops_cnt[READ].fetch_add(1, std::memory_order_relaxed);
       break;
     case UPDATE:
       status = TransactionUpdate();
+      end_time = get_now_micros();
+      hist_lat.interface.Add(&hist_lat, end_time - start_time);
       ops_time[UPDATE].fetch_add((get_now_micros() - start_time ), std::memory_order_relaxed);
       ops_cnt[UPDATE].fetch_add(1, std::memory_order_relaxed);
       break;
     case INSERT:
       status = TransactionInsert();
+      end_time = get_now_micros();
+      hist_lat.interface.Add(&hist_lat, end_time - start_time);
       ops_time[INSERT].fetch_add((get_now_micros() - start_time ), std::memory_order_relaxed);
       ops_cnt[INSERT].fetch_add(1, std::memory_order_relaxed);
       break;
     case SCAN:
       status = TransactionScan();
+      end_time = get_now_micros();
+      hist_lat.interface.Add(&hist_lat, end_time - start_time);
       ops_time[SCAN].fetch_add((get_now_micros() - start_time ), std::memory_order_relaxed);
       ops_cnt[SCAN].fetch_add(1, std::memory_order_relaxed);
       break;
     case READMODIFYWRITE:
       status = TransactionReadModifyWrite();
+      end_time = get_now_micros();
+      hist_lat.interface.Add(&hist_lat, end_time - start_time);
       ops_time[READMODIFYWRITE].fetch_add((get_now_micros() - start_time ), std::memory_order_relaxed);
       ops_cnt[READMODIFYWRITE].fetch_add(1, std::memory_order_relaxed);
       break;

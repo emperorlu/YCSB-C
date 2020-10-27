@@ -7,6 +7,7 @@ LIB_SOURCES= \
 		core/core_workload.cc  \
 		db/db_factory.cc   \
 		db/hashtable_db.cc  \
+		lib/histogram.cc \
 
 ##HWDB
 HWDB_SOURCES= db/hwdb_db.cc

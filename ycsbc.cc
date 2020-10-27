@@ -18,12 +18,14 @@
 #include "core/client.h"
 #include "core/core_workload.h"
 #include "db/db_factory.h"
+#include "lib/histogram.h"
 
 using namespace std;
 
 ////statistics
 atomic<uint64_t> ops_cnt[ycsbc::Operation::READMODIFYWRITE + 1];    //操作个数
 atomic<uint64_t> ops_time[ycsbc::Operation::READMODIFYWRITE + 1];   //微秒
+HistogramImpl hist_lat;
 ////
 
 
@@ -92,6 +94,8 @@ int main( const int argc, const char *argv[]) {
     // Loads data
     ycsbc::CoreWorkload wl;
     wl.Init(props);
+    
+    CreateHistogramImpl(&hist_lat);
 
     uint64_t load_start = get_now_micros();
     total_ops = stoi(props[ycsbc::CoreWorkload::RECORD_COUNT_PROPERTY]);
@@ -108,8 +112,11 @@ int main( const int argc, const char *argv[]) {
     }
     uint64_t load_end = get_now_micros();
     uint64_t use_time = load_end - load_start;
+    char *hisstr = hist_lat.interface.ToString(&hist_lat);
     printf("********** load result **********\n");
     printf("loading records:%d  use time:%.3f s  IOPS:%.2f iops (%.2f us/op)\n", sum, 1.0 * use_time*1e-6, 1.0 * sum * 1e6 / use_time, 1.0 * use_time / sum);
+    printf("\n%s\n", hisstr);
+    free(hisstr);
     printf("*********************************\n");
 
     if ( print_stats ) {
@@ -180,6 +187,8 @@ int main( const int argc, const char *argv[]) {
         ops_time[j].store(0);
       }
 
+      CreateHistogramImpl(&hist_lat);
+
       ifstream input(runfilenames[i]);
       try {
         props.Load(input);
@@ -217,7 +226,7 @@ int main( const int argc, const char *argv[]) {
         temp_cnt[j] = ops_cnt[j].load(std::memory_order_relaxed);
         temp_time[j] = ops_time[j].load(std::memory_order_relaxed);
       }
-
+      char *hisstr = hist_lat.interface.ToString(&hist_lat);
       printf("********** more run result **********\n");
       printf("all opeartion records:%d  use time:%.3f s  IOPS:%.2f iops (%.2f us/op)\n\n", sum, 1.0 * use_time*1e-6, 1.0 * sum * 1e6 / use_time, 1.0 * use_time / sum);
       if ( temp_cnt[ycsbc::INSERT] )          printf("insert ops:%7lu  use time:%7.3f s  IOPS:%7.2f iops (%.2f us/op)\n", temp_cnt[ycsbc::INSERT], 1.0 * temp_time[ycsbc::INSERT]*1e-6, 1.0 * temp_cnt[ycsbc::INSERT] * 1e6 / temp_time[ycsbc::INSERT], 1.0 * temp_time[ycsbc::INSERT] / temp_cnt[ycsbc::INSERT]);
@@ -225,6 +234,8 @@ int main( const int argc, const char *argv[]) {
       if ( temp_cnt[ycsbc::UPDATE] )          printf("update ops:%7lu  use time:%7.3f s  IOPS:%7.2f iops (%.2f us/op)\n", temp_cnt[ycsbc::UPDATE], 1.0 * temp_time[ycsbc::UPDATE]*1e-6, 1.0 * temp_cnt[ycsbc::UPDATE] * 1e6 / temp_time[ycsbc::UPDATE], 1.0 * temp_time[ycsbc::UPDATE] / temp_cnt[ycsbc::UPDATE]);
       if ( temp_cnt[ycsbc::SCAN] )            printf("scan ops  :%7lu  use time:%7.3f s  IOPS:%7.2f iops (%.2f us/op)\n", temp_cnt[ycsbc::SCAN], 1.0 * temp_time[ycsbc::SCAN]*1e-6, 1.0 * temp_cnt[ycsbc::SCAN] * 1e6 / temp_time[ycsbc::SCAN], 1.0 * temp_time[ycsbc::SCAN] / temp_cnt[ycsbc::SCAN]);
       if ( temp_cnt[ycsbc::READMODIFYWRITE] ) printf("rmw ops   :%7lu  use time:%7.3f s  IOPS:%7.2f iops (%.2f us/op)\n", temp_cnt[ycsbc::READMODIFYWRITE], 1.0 * temp_time[ycsbc::READMODIFYWRITE]*1e-6, 1.0 * temp_cnt[ycsbc::READMODIFYWRITE] * 1e6 / temp_time[ycsbc::READMODIFYWRITE], 1.0 * temp_time[ycsbc::READMODIFYWRITE] / temp_cnt[ycsbc::READMODIFYWRITE]);
+      printf("\n%s\n", hisstr);
+      free(hisstr);
       printf("********************************\n");
 
       if ( print_stats ) {
@@ -236,11 +247,7 @@ int main( const int argc, const char *argv[]) {
     }
     
   }
-  if ( print_stats ) {
-    printf("-------------- db statistics --------------\n");
-    db->PrintStats();
-    printf("-------------------------------------------\n");
-  }
+
   if ( wait_for_balance ) {
     uint64_t sleep_time = 0;
     while(!db->HaveBalancedDistribution()){
