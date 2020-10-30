@@ -204,7 +204,9 @@ namespace ycsbc {
         cout<<stats<<endl;
     }
 
-
+    void HWDB::Close() {
+        db_->interface.DebugPrint();
+    }
     HWDB::~HWDB() {
         DeleteHwdb(&db_);
     }

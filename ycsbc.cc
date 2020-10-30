@@ -95,6 +95,8 @@ int main( const int argc, const char *argv[]) {
     ycsbc::CoreWorkload wl;
     wl.Init(props);
     
+    db->Close(); // print sth to distinguish load and different run
+
     CreateHistogramImpl(&hist_lat);
 
     uint64_t load_start = get_now_micros();
@@ -187,6 +189,8 @@ int main( const int argc, const char *argv[]) {
         ops_time[j].store(0);
       }
 
+      db->Close(); // print sth to distinguish load and different run
+      
       CreateHistogramImpl(&hist_lat);
 
       ifstream input(runfilenames[i]);

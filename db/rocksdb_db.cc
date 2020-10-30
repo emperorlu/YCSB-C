@@ -32,6 +32,8 @@ namespace ycsbc {
         //options->enable_pipelined_write = true;
 
         options->max_background_jobs = 2;
+        // options->max_background_compactions = 1;
+        // options->max_background_flushed = 1;
         options->max_bytes_for_level_base = 32ul * 1024 * 1024;
         options->write_buffer_size = 32ul * 1024 * 1024;
         options->max_write_buffer_number = 2;
@@ -64,7 +66,7 @@ namespace ycsbc {
             options->statistics = dbstats_;
         }
 
-        write_sync_ = false;    //主要是写日志，
+        write_sync_ = true;    //主要是写日志，
     }
 
 

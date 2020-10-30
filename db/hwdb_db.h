@@ -49,6 +49,8 @@ namespace ycsbc {
 
         void PrintStats();
 
+        void Close();
+
         ~HWDB();
 
     private:

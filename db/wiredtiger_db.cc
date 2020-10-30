@@ -53,6 +53,9 @@ namespace ycsbc {
         conn_config << ",cache_size=";
         conn_config << cache_size;
 
+        conn_config << ",eviction=(threads_max=4)";
+        conn_config << ",transaction_sync=(enabled=true)";
+
         // string checkpoint = ",checkpoint=(wait=60,log_size=2G)";
         // conn_config += checkpoint;
 
@@ -75,11 +78,11 @@ namespace ycsbc {
 
         config << "key_format=S,value_format=S";
         config << ",prefix_compression=false";
-        config << ",checksum=off";
+        config << ",checksum=on";
         
         config << ",internal_page_max=16kb";
         config << ",leaf_page_max=16kb";
-        config << ",memory_page_max=100MB";
+        config << ",memory_page_max=10MB";
 
         // config << ",lsm=(";
         // config << ",chunk_size=20MB";
@@ -209,7 +212,7 @@ namespace ycsbc {
         suri.str("");
         suri << "statistics:session" << uri_;
         for(int i = 0; i < session_nums_; i++){
-            int ret = session[i]->open_cursor(session_[i], suri.str().c_str(), NULL, "statistics=(all,clear)", &cursor);
+            int ret = session_[i]->open_cursor(session_[i], suri.str().c_str(), NULL, "statistics=(all,clear)", &cursor);
             if (ret != 0) {
                 fprintf(stderr, "open_cursor error: %s\n", wiredtiger_strerror(ret));
                 exit(1);
