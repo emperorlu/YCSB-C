@@ -19,7 +19,6 @@
 #include "core/core_workload.h"
 #include "db/db_factory.h"
 #include "lib/histogram.h"
-
 using namespace std;
 
 ////statistics
@@ -27,7 +26,6 @@ atomic<uint64_t> ops_cnt[ycsbc::Operation::READMODIFYWRITE + 1];    //操作个�
 atomic<uint64_t> ops_time[ycsbc::Operation::READMODIFYWRITE + 1];   //微秒
 HistogramImpl hist_lat;
 ////
-
 
 void UsageMessage(const char *command);
 bool StrStartWith(const char *str, const char *pre);

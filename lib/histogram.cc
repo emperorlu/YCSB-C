@@ -55,7 +55,7 @@ void DeleteHistogramBucketMapper(HistogramBucketMapper* mapper){
 }
 
 //二分查找大于等于的第一个下标,不存在情况没有讨论，外面限制了范围
-uint32_t GetLowerIndex(uint64_t *values, uint64_t size, const uint64_t k) {
+static uint32_t GetLowerIndex(uint64_t *values, uint64_t size, const uint64_t k) {
     uint32_t l = 0, r = size - 1;
     while(l < r) {
         uint32_t mid = (l + r) / 2;
@@ -71,7 +71,7 @@ uint32_t GetLowerIndex(uint64_t *values, uint64_t size, const uint64_t k) {
 }
 
 //HistogramBucketMapper::
-size_t IndexForValue(HistogramBucketMapper *bucketMapper, const uint64_t value) {
+static size_t IndexForValue(HistogramBucketMapper *bucketMapper, const uint64_t value) {
     if(value < bucketMapper->maxBucketValue_ && value > bucketMapper->minBucketValue_){
         return GetLowerIndex(bucketMapper->bucketValues_, bucketMapper->size_, value);
     }

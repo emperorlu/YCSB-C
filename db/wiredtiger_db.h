@@ -10,7 +10,7 @@
 #include <string>
 #include "core/properties.h"
 #include "core/core_workload.h"
-#include <wiredtiger/wiredtiger_ext.h>
+#include <wiredtiger_ext.h>
 
 using std::cout;
 using std::endl;
