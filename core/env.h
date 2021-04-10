@@ -17,7 +17,7 @@
 namespace ycsbc {
 
 struct spdk_file_fd {
-    void *mFile;
+    void *mFile; // type = spdk_file
 };
 
 /* wiredtiger interface */
@@ -41,7 +41,7 @@ int spdk_size_file(struct spdk_file_fd *fd, off_t *sizep);
 int spdk_sync_file(struct spdk_file_fd *fd);
 int64_t spdk_read_file(struct spdk_file_fd *fd, off_t offset, size_t len, void *buf);
 int spdk_write_file(struct spdk_file_fd *fd, off_t offset, size_t len, 
-    void *buf /*, uint64_t stream_id*/);
+    void *buf);
 int spdk_truncate_file(struct spdk_file_fd *fd, off_t len);
 
 } // ycsbc

@@ -20,28 +20,25 @@ namespace ycsbc {
 extern "C"{
 #endif
     /* spdk_file_system begin */
-    const size_t wt_gigabyte =  1073741824;
-    const uint32_t wt_stream_sequence = 1;
-    const uint32_t wt_stream_random = 2;
-    const uint32_t wt_stream_no = 0;
-    const uint32_t wt_stream_offset = 1024ul * 1024 * 3.2 * 1024;
+    // const size_t wt_gigabyte =  1073741824;
+    // const uint32_t wt_stream_sequence = 1;
+    // const uint32_t wt_stream_random = 2;
+    // const uint32_t wt_stream_no = 0;
+    // const uint32_t wt_stream_offset = 1024ul * 1024 * 3.2 * 1024;
 
     typedef struct {
         WT_FILE_SYSTEM iface;
 
         WT_EXTENSION_API *wtext; /* Extension functions */
 
-        pthread_spinlock_t stream_id_lock;
-        uint64_t g_virtual_stream_id;
     } SPDK_FILE_SYSTEM;
 
     typedef struct __wt_file_handle_spdk {
         WT_FILE_HANDLE iface;
+
         SPDK_FILE_SYSTEM *spdk_fs;
 
-        void* fd;
-
-        uint64_t stream_id;
+        void* fd; // type = spdk_file_fd
     } WT_FILE_HANDLE_SPDK;
 
     int spdk_file_system_create(WT_CONNECTION *conn, WT_CONFIG_ARG *config);
@@ -134,11 +131,11 @@ extern "C"{
         wtext = spdk_fs->wtext;
 
         ret = spdk_fs_remove(name);
-        if (ret != 0)
+        if (ret != 0) 
             (void)wtext->err_printf(wtext, wt_session, 
                     "%s: file-remove: spdk remove", name);
 
-        return (0);
+        return ret;
     }
 
     /*
@@ -357,18 +354,11 @@ extern "C"{
         size_t chunk;
         ssize_t nw;
         const uint8_t *addr;
-        uint64_t stream_id;
 
         pfh = (WT_FILE_HANDLE_SPDK *)file_handle;
         spdk_fs = pfh->spdk_fs;
         wtext = spdk_fs->wtext;
 
-        if(flags & wt_stream_sequence) stream_id = 0;
-        else if (flags & wt_stream_random) {
-            stream_id = offset > wt_stream_offset ? 2 : 1;
-        } else {
-            stream_id = pfh->stream_id;
-        }
 
         /* Break writes larger than 1GB into 1GB chunks. */
         // for (addr = (uint8_t*)buf; len > 0; addr += nw, len -= (size_t)nw, offset += nw) {
@@ -379,7 +369,7 @@ extern "C"{
         //             file_handle->name, chunk, (uintmax_t)offset);
         // }
 
-        if (spdk_write_file((spdk_file_fd*)pfh->fd, offset, len, const_cast<void *>(buf)/*, stream_id*/) != 0)
+        if (spdk_write_file((spdk_file_fd*)pfh->fd, offset, len, const_cast<void *>(buf)) != 0)
                 (void)wtext->err_printf(wtext, wt_session, 
                     "%s: handle-write: pwrite: failed to write %u bytes at offset %" PRIuMAX,
                     file_handle->name, len, (uintmax_t)offset);
@@ -395,6 +385,9 @@ extern "C"{
     __spdk_open_file(WT_FILE_SYSTEM *file_system, WT_SESSION *wt_session, const char *name,
     WT_FS_OPEN_FILE_TYPE file_type, uint32_t flags, WT_FILE_HANDLE **file_handlep)
     {
+        (void)file_type; /* Unused */
+        (void)flags;     /* Unused */
+
         int ret = 0;
         WT_FILE_HANDLE *file_handle;
         WT_FILE_HANDLE_SPDK *pfh;
@@ -421,12 +414,6 @@ extern "C"{
             wtext, wt_session, "open file: %s", wtext->strerror(wtext, NULL, ret));
             goto err;
         }
-
-        // TODO: retain fd in memory
-        pthread_spin_lock(&spdk_fs->stream_id_lock);
-        pfh->stream_id = spdk_fs->g_virtual_stream_id;
-        ++spdk_fs->g_virtual_stream_id;
-        pthread_spin_unlock(&spdk_fs->stream_id_lock);
 
         /* Initialize public information. */
         file_handle = (WT_FILE_HANDLE *)pfh;
@@ -459,12 +446,15 @@ extern "C"{
     static int
     __spdk_terminate(WT_FILE_SYSTEM *file_system, WT_SESSION *wt_session)
     {
-        (void)file_system;
         (void)wt_session;
 
+        SPDK_FILE_SYSTEM *spdk_fs;
+
+        spdk_fs = (SPDK_FILE_SYSTEM *)file_system;
+
         spdk_close_env();
-        
-        free(file_system);
+
+        free(spdk_fs);
 
         return (0);
     }
@@ -493,10 +483,6 @@ extern "C"{
         }
 
         spdk_init_env(FLAGS_spdk_conf, FLAGS_spdk_bdev, FLAGS_spdk_cache_size);
-
-        pthread_spin_init(&spdk_fs->stream_id_lock, 0);
-        spdk_fs->wtext = wtext;
-        spdk_fs->g_virtual_stream_id = 3;
 
         file_system = (WT_FILE_SYSTEM *)spdk_fs;
 
@@ -568,7 +554,6 @@ extern "C"{
 
     err:
         spdk_close_env();
-        pthread_spin_destroy(&spdk_fs->stream_id_lock);
         free(spdk_fs);
         /* An error installing the file system is fatal. */
         exit(1);
