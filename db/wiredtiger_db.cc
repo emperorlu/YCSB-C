@@ -348,6 +348,8 @@ extern "C"{
     __spdk_file_write(
     WT_FILE_HANDLE *file_handle, WT_SESSION *wt_session, wt_off_t offset, size_t len, const void *buf, uint32_t flags)
     {
+        (void)flags;
+        
         WT_FILE_HANDLE_SPDK *pfh;
         SPDK_FILE_SYSTEM *spdk_fs;
         WT_EXTENSION_API *wtext;
@@ -408,7 +410,7 @@ extern "C"{
         pfh->spdk_fs = spdk_fs;
 
         // int file_type_ = file_type == WT_FS_OPEN_FILE_TYPE_DIRECTORY ? 0 : 1;
-        ret = spdk_open_file((spdk_file_fd**)(&(pfh->fd)), name, 1);
+        ret = spdk_open_file((spdk_file_fd**)(&(pfh->fd)), name);
         if (ret != 0){
             (void)wtext->err_printf(
             wtext, wt_session, "open file: %s", wtext->strerror(wtext, NULL, ret));

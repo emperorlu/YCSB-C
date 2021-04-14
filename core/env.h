@@ -29,8 +29,7 @@ void spdk_close_env();
 int spdk_fs_directory_list(const char *directory,
   const char *prefix, char ***dirlistp, uint32_t *countp, bool single);
 int spdk_fs_directory_list_free(char **dirlist, uint32_t count);
-int spdk_open_file(struct spdk_file_fd **fd, const char *name,
-  int file_type);
+int spdk_open_file(struct spdk_file_fd **fd, const char *name/*, int file_type*/);
 int spdk_fs_exist(const char *name);
 int spdk_fs_remove(const char *name);
 int spdk_fs_rename(const char *from, const char *to);
