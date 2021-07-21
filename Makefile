@@ -32,7 +32,7 @@ WIREDTIGER_OBJECTS=$(WIREDTIGER_SOURCES:.cc=.o)
 
 ##titan
 TITAN_SOURCES= db/titan_db.cc
-TITAN_LIBRARY= -ltitan
+TITAN_LIBRARY= -ltitan -lrocksdb -lz -lzstd -llz4 -lsnappy
 TITAN_DEFS= -DYCSB_TITAN
 TITAN_OBJECTS=$(TITAN_SOURCES:.cc=.o)
 ##
