@@ -19,6 +19,10 @@
 #include "db/rocksdb_db.h"
 #endif
 
+#ifdef YCSB_TITAN
+#include "db/titan_db.h"
+#endif
+
 #ifdef YCSB_WIREDTIGER
 #include "db/wiredtiger_db.h"
 #endif
@@ -35,6 +39,13 @@ DB* DBFactory::CreateDB(utils::Properties &props) {
   else if (props["dbname"] == "hwdb") {
     std::string dbpath = props.GetProperty("dbpath","/tmp/test-hwdb");
     return new HWDB(dbpath.c_str(), props);
+  } 
+#endif
+
+#ifdef YCSB_TITAN
+  else if (props["dbname"] == "titan") {
+    std::string dbpath = props.GetProperty("dbpath","/tmp/test-titan");
+    return new Titan(dbpath.c_str(), props);
   } 
 #endif
 
