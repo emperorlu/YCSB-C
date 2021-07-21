@@ -11,10 +11,16 @@
 #include "core/properties.h"
 #include "core/core_workload.h"
 
-#include <titan/include/titan/db.h>
-#include <titan/include/titan/checkpoint.h>
-#include <titan/include/titan/statistics.h>
-#include <titan/include/titan/options.h>
+#include <titan/db.h>
+#include <titan/checkpoint.h>
+#include <titan/statistics.h>
+#include <titan/options.h>
+
+#include <rocksdb/db.h>
+#include <rocksdb/cache.h>
+#include <rocksdb/table.h>
+#include <rocksdb/filter_policy.h>
+#include <rocksdb/options.h>
 
 using std::cout;
 using std::endl;
