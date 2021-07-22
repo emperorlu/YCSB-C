@@ -46,6 +46,8 @@ namespace ycsbc {
         options->use_direct_reads = true;
         options->use_direct_io_for_flush_and_compaction = true;
 
+        options->keep_log_file_num = 0;
+
         uint64_t nums = stoi(props.GetProperty(CoreWorkload::RECORD_COUNT_PROPERTY));
         uint32_t key_len = stoi(props.GetProperty(CoreWorkload::KEY_LENGTH));
         uint32_t value_len = stoi(props.GetProperty(CoreWorkload::FIELD_LENGTH_PROPERTY));
