@@ -31,7 +31,7 @@ namespace ycsbc {
         options->compression = rocksdb::kNoCompression;
         //options->enable_pipelined_write = true;
 
-        options->max_background_jobs = 2;
+        // options->max_background_jobs = 2;
         // options->max_background_compactions = 1;
         // options->max_background_flushed = 1;
         options->max_bytes_for_level_base = 32ul * 1024 * 1024;
