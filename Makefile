@@ -18,7 +18,7 @@ HWDB_OBJECTS=$(HWDB_SOURCES:.cc=.o)
 
 ##rocksdb
 ROCKSDB_SOURCES= db/rocksdb_db.cc
-ROCKSDB_LIBRARY= -lrocksdb #-lz -lzstd -llz4 -lsnappy
+ROCKSDB_LIBRARY= -lrocksdb -lz -lzstd -llz4 -lsnappy -lbz2
 ROCKSDB_DEFS= -DYCSB_ROCKSDB
 ROCKSDB_OBJECTS=$(ROCKSDB_SOURCES:.cc=.o)
 ##
@@ -32,7 +32,7 @@ WIREDTIGER_OBJECTS=$(WIREDTIGER_SOURCES:.cc=.o)
 
 ##titan
 TITAN_SOURCES= db/titan_db.cc
-TITAN_LIBRARY= -ltitan -lrocksdb #-lz -lzstd -llz4 -lsnappy
+TITAN_LIBRARY= -ltitan -lrocksdb -lz -lzstd -llz4 -lsnappy -lbz2
 TITAN_DEFS= -DYCSB_TITAN
 TITAN_OBJECTS=$(TITAN_SOURCES:.cc=.o)
 ##
